@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:med_shakthi/src/features/cart/presentation/screens/cart_page.dart';
+import 'package:med_shakthi/src/features/orders/orders_page.dart';
 import 'package:med_shakthi/src/features/products/presentation/screens/product_page.dart';
+import 'package:med_shakthi/src/features/profile/presentation/screens/profile_screen.dart';
+import 'package:provider/provider.dart';
+import '../cart/data/cart_data.dart';
+import '../cart/data/cart_item.dart';
+import '../orders/order_screen.dart';
+import '../products/data/models/product_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// This screen implements the "med Shakti home page "
 class PharmacyHomeScreen extends StatefulWidget {
@@ -32,7 +40,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
               _buildSectionTitle(
                 "Categories",
                 "See All",
-                () {},
+                    () {},
               ), // categories Title
               const SizedBox(height: 16),
               _buildCategoriesList(), // Categories List
@@ -40,7 +48,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
               _buildSectionTitle(
                 "Bestseller Products",
                 "See All",
-                () {},
+                    () {},
               ), // Bestseller Products Title
               const SizedBox(height: 16),
               _buildBestsellersList(), // Bestsellers List
@@ -94,7 +102,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
         // Cart Button with Badge
         Stack(
           clipBehavior:
-              Clip.none, // Allows elements to go outside the stack bounds
+          Clip.none, // Allows elements to go outside the stack bounds
           children: [
             _buildIconBox(Icons.shopping_cart_outlined, () {
               Navigator.push(
@@ -274,10 +282,10 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
 
   /// Reusable section title with "See All" button
   Widget _buildSectionTitle(
-    String title,
-    String actionText,
-    VoidCallback onAction,
-  ) {
+      String title,
+      String actionText,
+      VoidCallback onAction,
+      ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -352,7 +360,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
         scrollDirection: Axis.horizontal, // Horizontal scrolling
         itemCount: categories.length,
         separatorBuilder: (_, _) =>
-            const SizedBox(width: 20), // Spacing between items
+        const SizedBox(width: 20), // Spacing between items
         itemBuilder: (context, index) {
           final cat = categories[index];
           return Column(
@@ -377,7 +385,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
                   child: Icon(
                     cat['icon'] as IconData,
                     color:
-                        (cat['color'] as Color?)?.withValues(alpha: 1.0) ??
+                    (cat['color'] as Color?)?.withValues(alpha: 1.0) ??
                         Colors.blue, // Using the color for the icon
                     size: 28,
                   ),
@@ -399,129 +407,204 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
     );
   }
 
+  final SupabaseClient supabase = Supabase.instance.client;
+
+  Future<List<Product>> _fetchProducts() async {
+    final res = await supabase
+        .from('products')
+        .select()
+        .order('created_at', ascending: false);
+
+    return (res as List)
+        .map((e) => Product.fromMap(e as Map<String, dynamic>))
+        .toList();
+  }
+
   /// Builds the horizontal list of product cards
   Widget _buildBestsellersList() {
-    return SizedBox(
-      height: 260, // Height enough to fit image + text + price
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none, // Allow shadow to flow outside
-        itemCount: 7,
-        itemBuilder: (context, index) {
-          // Alternatig dummy data
-          final bool isMilkThistle = index % 2 == 0;
-          return GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ProductPage()),
-            ),
-            child: Container(
-              width: 160,
-              margin: const EdgeInsets.only(right: 16),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.08),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
+    return FutureBuilder<List<Product>>(
+      future: _fetchProducts(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 260,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return SizedBox(
+            height: 260,
+            child: Center(child: Text("Error: ${snapshot.error}")),
+          );
+        }
+
+        final products = snapshot.data ?? [];
+
+        if (products.isEmpty) {
+          return const SizedBox(
+            height: 260,
+            child: Center(child: Text("No products available")),
+          );
+        }
+
+        return SizedBox(
+          height: 260,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            itemCount: products.length,
+            itemBuilder: (context, index) {
+              final product = products[index];
+
+              return GestureDetector(
+                //  Product details page open (same as before)
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProductPage(product: product),
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Product Image Area
-                  Expanded(
-                    child: Center(
-                      child: Image.network(
-                        isMilkThistle
-                            ? 'https://pngimg.com/uploads/pills/pills_PNG98765.png' // Dummy pill bottle
-                            : 'https://pngimg.com/uploads/vitamin_bottle/vitamin_bottle_PNG9.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (c, e, s) => Container(
-                          color: Colors.grey[100],
-                          child: const Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              color: Colors.grey,
+                ),
+                child: Container(
+                  width: 160,
+                  margin: const EdgeInsets.only(right: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.08),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      //  Image
+                      Expanded(
+                        child: Center(
+                          child: Image.network(
+                            product.image,
+                            fit: BoxFit.contain,
+                            errorBuilder: (c, e, s) => Container(
+                              color: Colors.grey[100],
+                              child: const Center(
+                                child: Icon(Icons.image_not_supported),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Title
-                  Text(
-                    isMilkThistle
-                        ? "Milk Thistle Liver Care"
-                        : "Puregen Cold Relief",
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  // Subtitle / Category
-                  Text(
-                    isMilkThistle ? "Supplements" : "Medicine",
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                  const SizedBox(height: 8),
-                  // Rating Row
-                  const Row(
-                    children: [
-                      Icon(Icons.star, color: Colors.amber, size: 14),
-                      SizedBox(width: 4),
+
+                      const SizedBox(height: 12),
+
+                      //  Title
                       Text(
-                        "4.8 (2.2k)",
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  // Price and Add Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "\$16.99",
-                        style: TextStyle(
+                        product.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.black87,
+                          fontSize: 14,
                         ),
                       ),
-                      // Add Button (+)
-                      Container(
-                        height: 32,
-                        width: 32,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF5A9CA0), // Brand color
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.add,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+
+                      const SizedBox(height: 4),
+
+                      //  Category
+                      Text(
+                        product.category,
+                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      //  Rating Row (dynamic)
+                      Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${product.rating.toStringAsFixed(1)}",
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      //  Price and Add Button
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "₹${product.price.toStringAsFixed(2)}",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.black87,
+                            ),
+                          ),
+
+                          //  Add Button (+) -> cart add + open CartPage
+                          InkWell(
+                            onTap: () {
+                              //  stop GestureDetector tap (details page)
+                              // otherwise both tap trigger ho jayega
+                              // so we do: onTapDown trick not needed, just use InkWell here
+
+                              final cartItem = CartItem(
+                                id: product.id, //  UUID from Supabase
+                                name: product.name,
+                                title: product.name,
+                                brand: product.category,
+                                size: "Standard",
+                                price: product.price,
+                                imagePath: product.image,
+                                imageUrl: product.image,
+                              );
+
+                              context.read<CartData>().addItem(cartItem);
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const CartPage()),
+                              );
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Item added to cart ")),
+                              );
+                            },
+                            child: Container(
+                              height: 32,
+                              width: 32,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF5A9CA0),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
+
 
   /// Custom Bottom Navigation Bar
   Widget _buildBottomNavigationBar() {
@@ -556,8 +639,29 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
 
   Widget _buildNavItem(IconData icon, String label, int index) {
     final isSelected = _selectedIndex == index;
+
     return GestureDetector(
-      onTap: () => setState(() => _selectedIndex = index),
+      onTap: () {
+        if (index == 4) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AccountPage(), // Ensure this widget name matches your class
+            ),
+          );
+        } else if (index == 3) {
+          // --- NAVIGATION TO ORDER SCREEN ---
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OrdersPage(),
+            ),
+          );
+        } else {
+          // For other buttons, just update the UI selection
+          setState(() => _selectedIndex = index);
+        }
+      },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
