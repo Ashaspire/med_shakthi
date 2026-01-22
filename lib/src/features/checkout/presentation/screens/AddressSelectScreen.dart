@@ -3,10 +3,12 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import '../models/AddressModel.dart';
-import '../AddressStore.dart';
-import 'PaymentMethodScreen.dart';
+import 'package:med_shakthi/src/features/checkout/presentation/screens/PaymentMethodScreen.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'AddressModel.dart';
+import 'AddressStore.dart';
 
 
 class AddressSelectScreen extends StatefulWidget {
@@ -23,20 +25,38 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+
+    Future.microtask(() {
+      context.read<AddressStore>().fetchAddresses();
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
   Future<void> _getAddress(LatLng pos) async {
-    final placemarks =
-    await placemarkFromCoordinates(pos.latitude, pos.longitude);
-    final p = placemarks.first;
+    try {
+      final placemarks =
+      await placemarkFromCoordinates(pos.latitude, pos.longitude);
 
-    setState(() {
-      addressText =
-      "${p.street}, ${p.locality}, ${p.administrativeArea}, ${p.postalCode}";
-    });
+      if (placemarks.isEmpty) return;
+
+      final p = placemarks.first;
+
+      setState(() {
+        addressText =
+        "${p.street ?? ''}, ${p.locality ?? ''}, ${p.administrativeArea ?? ''}, ${p.postalCode ?? ''}";
+      });
+    } catch (e) {
+      setState(() {
+        addressText = "Address not found";
+      });
+    }
   }
 
   Future<void> _searchAddress(String query) async {
@@ -47,9 +67,9 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
       if (locations.isNotEmpty) {
         final location = locations.first;
         final latLng = LatLng(location.latitude, location.longitude);
-        setState(() {
-          selectedLatLng = latLng;
-        });
+
+        setState(() => selectedLatLng = latLng);
+
         await _getAddress(latLng);
         mapController?.animateCamera(CameraUpdate.newLatLngZoom(latLng, 15));
       }
@@ -64,12 +84,12 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) {
+      builder: (_) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.8,
+          initialChildSize: 0.85,
           minChildSize: 0.5,
-          maxChildSize: 0.9,
+          maxChildSize: 0.95,
           builder: (context, scrollController) {
             return Column(
               children: [
@@ -96,15 +116,15 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
                       zoom: 15,
                     ),
                     onMapCreated: (controller) => mapController = controller,
-                    onTap: (pos) {
-                      selectedLatLng = pos;
-                      _getAddress(pos);
+                    onTap: (pos) async {
+                      setState(() => selectedLatLng = pos);
+                      await _getAddress(pos);
                     },
                     gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
                       Factory<OneSequenceGestureRecognizer>(
                             () => EagerGestureRecognizer(),
                       ),
-                    }.toSet(),
+                    },
                     markers: {
                       Marker(
                         markerId: const MarkerId("selected"),
@@ -128,18 +148,36 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
                           backgroundColor: Colors.deepOrange,
                           minimumSize: const Size.fromHeight(52),
                         ),
-                        onPressed: () {
+                        onPressed: () async {
+                          final user = Supabase.instance.client.auth.currentUser;
+                          if (user == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("User not logged in")),
+                            );
+                            return;
+                          }
+
+                          if (addressText == "Tap on map to select address" ||
+                              addressText == "Address not found") {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Please select valid address")),
+                            );
+                            return;
+                          }
+
                           final address = AddressModel(
-                            id: DateTime.now().toString(),
+                            id: DateTime.now().millisecondsSinceEpoch.toString(),
+                            userId: user.id,
                             title: "Home",
                             fullAddress: addressText,
                             lat: selectedLatLng.latitude,
                             lng: selectedLatLng.longitude,
                           );
 
-                          AddressStore.addAddress(address);
-                          Navigator.pop(context); // Close bottom sheet
-                          setState(() {}); // Refresh list
+                          await context.read<AddressStore>().addAddress(address);
+
+                          if (!mounted) return;
+                          Navigator.pop(context);
                         },
                         child: const Text(
                           "Save Address",
@@ -160,21 +198,28 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final store = context.watch<AddressStore>();
+
     return Scaffold(
       appBar: AppBar(title: const Text("Delivery Address"), centerTitle: true),
-      body: ListView.builder(
+      body: store.loading
+          ? const Center(child: CircularProgressIndicator())
+          : store.addresses.isEmpty
+          ? const Center(child: Text("No address saved yet"))
+          : ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: AddressStore.addresses.length,
+        itemCount: store.addresses.length,
         itemBuilder: (_, i) {
-          final address = AddressStore.addresses[i];
+          final address = store.addresses[i];
 
           return GestureDetector(
             onTap: () {
-              AddressStore.selectAddress(address.id);
-              setState(() {});
+              store.selectAddressLocal(address.id);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => PaymentMethodScreen()),
+                MaterialPageRoute(
+                  builder: (_) => PaymentMethodScreen(),
+                ),
               );
             },
             child: Container(
@@ -184,25 +229,19 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color:
-                  address.isSelected ? Colors.teal : Colors.grey.shade300,
+                  color: address.isSelected
+                      ? Colors.teal
+                      : Colors.grey.shade300,
                   width: 1.5,
                 ),
-                boxShadow: address.isSelected
-                    ? [
-                  BoxShadow(
-                    color: Colors.teal.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-                    : null,
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.location_on,
-                    color: address.isSelected ? Colors.teal : Colors.grey,
+                    color: address.isSelected
+                        ? Colors.teal
+                        : Colors.grey,
                     size: 28,
                   ),
                   const SizedBox(width: 12),
@@ -215,8 +254,9 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            color:
-                            address.isSelected ? Colors.teal : Colors.black,
+                            color: address.isSelected
+                                ? Colors.teal
+                                : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -276,69 +316,4 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
   }
 }
 
-// class AddressSelectScreen extends StatefulWidget {
-//   const AddressSelectScreen({super.key});
 
-//   @override
-//   State<AddressSelectScreen> createState() => _AddressSelectScreenState();
-// }
-
-// class _AddressSelectScreenState extends State<AddressSelectScreen> {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: const Text("Select Address")),
-//       body: ListView.builder(
-//         padding: const EdgeInsets.all(16),
-//         itemCount: AddressStore.addresses.length,
-//         itemBuilder: (_, i) {
-//           final address = AddressStore.addresses[i];
-//           return GestureDetector(
-//             onTap: () {
-//               AddressStore.selectAddress(address.id);
-//               Navigator.pop(context);
-//             },
-//             child: Container(
-//               margin: const EdgeInsets.only(bottom: 12),
-//               padding: const EdgeInsets.all(14),
-//               decoration: BoxDecoration(
-//                 borderRadius: BorderRadius.circular(14),
-//                 border: Border.all(
-//                   color: address.isSelected
-//                       ? Colors.teal
-//                       : Colors.grey.shade300,
-//                 ),
-//               ),
-//               child: Column(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: [
-//                   Text(address.title,
-//                       style: const TextStyle(fontWeight: FontWeight.bold)),
-//                   const SizedBox(height: 6),
-//                   Text(address.fullAddress),
-//                 ],
-//               ),
-//             ),
-//           );
-//         },
-//       ),
-//       bottomNavigationBar: Padding(
-//         padding: const EdgeInsets.all(16),
-//         child: ElevatedButton(
-//           onPressed: () async {
-//             final newAddress = await Navigator.push(
-//               context,
-//               MaterialPageRoute(builder: (_) => const AddAddressScreen()),
-//             );
-
-//             if (newAddress != null) {
-//               AddressStore.addAddress(newAddress);
-//               setState(() {});
-//             }
-//           },
-//           child: const Text("Add New Address"),
-//         ),
-//       ),
-//     );
-//   }
-// }

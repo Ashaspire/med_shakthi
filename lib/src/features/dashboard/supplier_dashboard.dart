@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart'; // Added from teammate's code
 import 'package:med_shakthi/src/features/supplier/inventory/ui/supplier_inventory_screen.dart';
-import '../supplier/orders/orders_page.dart';
+import 'package:med_shakthi/src/features/supplier/orders/supplier_orders_page.dart';
 import '../profile/presentation/screens/supplier_profile_screen.dart';
 import '../supplier/inventory/ui/add_product_page.dart';
 import '../supplier/sales/sales_page.dart';
@@ -21,7 +21,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
     if (index == 4) {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierProfileScreen()));
     } else if (index == 3) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdersPage()));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierOrdersPage()));
     } else {
       setState(() => _selectedIndex = index);
     }
@@ -202,7 +202,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           return InkWell(
             onTap: () {
               if (cats[index]['label'] == "Orders") {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdersPage()));
+                Navigator.push(context, MaterialPageRoute(builder: (_) =>  SupplierOrdersPage()));
               } else if (cats[index]['label'] == "Inventory") {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierInventoryScreen()));
               }
