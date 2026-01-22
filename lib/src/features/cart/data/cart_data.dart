@@ -38,4 +38,9 @@ class CartData extends ChangeNotifier {
     _items.removeAt(index);
     notifyListeners();
   }
+
+  void clearCart() {
+    items.clear();
+    notifyListeners();
+  }
 }

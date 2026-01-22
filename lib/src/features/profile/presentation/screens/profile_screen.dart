@@ -1,8 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:med_shakthi/src/features/checkout/presentation/screens/AddressStore.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:med_shakthi/src/features/auth/presentation/screens/login_page.dart';
+import 'settings_page.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -13,50 +16,101 @@ class AccountPage extends StatefulWidget {
 
 class _AccountPageState extends State<AccountPage> {
   final SupabaseClient supabase = Supabase.instance.client;
-  File? _profileImage;
   final _picker = ImagePicker();
 
+  File? _profileImage;
+
   bool _isLoading = false;
-  String _email = 'Loading...';
-  String _displayName = 'User';
-  String _phone = '';
+
+  String _email = "Loading...";
+  String _displayName = "User";
+  String _phone = "";
+
+  //  Address fields
+  String _addressLine1 = "";
+  String _addressLine2 = "";
+  String _city = "";
+  String _state = "";
+  String _pincode = "";
+
+  //  Orders list
+  List<Map<String, dynamic>> _orders = [];
+  bool _ordersLoading = false;
 
   @override
   void initState() {
     super.initState();
     _fetchUserData();
+    _fetchOrders();
   }
 
   Future<void> _fetchUserData() async {
+    setState(() => _isLoading = true);
+
     final user = supabase.auth.currentUser;
-    if (user != null) {
-      // Try to get name from user metadata if available
-      final metaName = user.userMetadata?['name'] ?? user.userMetadata?['full_name'];
+
+    if (user == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final metaName =
+          user.userMetadata?['name'] ?? user.userMetadata?['full_name'];
 
       setState(() {
-        _email = user.email ?? '';
-        _phone = user.phone ?? '';
-        // If metadata name is missing, use the part of email before '@'
-        _displayName = metaName ?? _email.split('@')[0];
+        _email = user.email ?? "";
+        _phone = user.phone ?? "";
+        _displayName =
+            metaName ?? (_email.isNotEmpty ? _email.split('@')[0] : "User");
       });
 
-      // Optional: Fetch additional details from your 'users' table if you have one
-      try {
-        final data = await supabase
-            .from('users')
-            .select()
-            .eq('id', user.id)
-            .maybeSingle();
+      //  Fetch from users table
+      final data = await supabase
+          .from('users')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
 
-        if (data != null && mounted) {
-          setState(() {
-            _displayName = data['name'] ?? _displayName;
-            _phone = data['phone'] ?? _phone;
-          });
-        }
-      } catch (_) {
-        // Silently fail if table doesn't exist or error occurs
+      if (data != null && mounted) {
+        setState(() {
+          _displayName = data['name'] ?? _displayName;
+          _phone = data['phone'] ?? _phone;
+
+          _addressLine1 = data['address_line1'] ?? "";
+          _addressLine2 = data['address_line2'] ?? "";
+          _city = data['city'] ?? "";
+          _state = data['state'] ?? "";
+          _pincode = data['pincode'] ?? "";
+        });
       }
+    } catch (_) {}
+
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _fetchOrders() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    setState(() => _ordersLoading = true);
+
+    try {
+      final data = await supabase
+          .from('orders')
+          .select()
+          .eq('user_id', user.id)
+          .order('created_at', ascending: false);
+
+      if (mounted) {
+        setState(() {
+          _orders = List<Map<String, dynamic>>.from(data);
+        });
+      }
+    } catch (e) {
+      debugPrint("Orders Error: $e");
+    } finally {
+      if (mounted) setState(() => _ordersLoading = false);
     }
   }
 
@@ -66,16 +120,15 @@ class _AccountPageState extends State<AccountPage> {
       await supabase.auth.signOut();
       if (!mounted) return;
 
-      // Navigate to Login Page and remove all previous routes
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-            (route) => false,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error signing out: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Logout failed: $e")));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -94,16 +147,16 @@ class _AccountPageState extends State<AccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Use existing theme & colors from MaterialApp
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final addressStore = context.watch<AddressStore>();
+    final selected = addressStore.selectedAddress;
 
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Fallback if colorScheme.background isn't set
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         elevation: 0,
         centerTitle: true,
-        title: const Text('Account', style: TextStyle(color: Colors.black)),
+        title: const Text("Account", style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
@@ -111,220 +164,289 @@ class _AccountPageState extends State<AccountPage> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : Column(
-          children: [
-            // TOP PROFILE CARD
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // PROFILE AVATAR WITH EDIT OPTION
-                  InkWell(
-                    borderRadius: BorderRadius.circular(48),
-                    onTap: _pickProfileImage,
-                    child: Stack(
-                      alignment: Alignment.bottomRight,
+                  //  PROFILE CARD
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
                       children: [
-                        Hero(
-                          tag: 'user-avatar',
-                          child: CircleAvatar(
-                            radius: 34,
-                            backgroundColor: const Color(0xFF6AA39B).withOpacity(0.12),
-                            backgroundImage: _profileImage != null
-                                ? FileImage(_profileImage!)
-                                : null,
-                            child: _profileImage == null
-                                ? Text(
-                              _displayName.isNotEmpty ? _displayName[0].toUpperCase() : 'U',
-                              style: theme.textTheme.headlineMedium?.copyWith(
-                                color: const Color(0xFF6AA39B),
-                                fontWeight: FontWeight.w600,
+                        InkWell(
+                          borderRadius: BorderRadius.circular(48),
+                          onTap: _pickProfileImage,
+                          child: Stack(
+                            alignment: Alignment.bottomRight,
+                            children: [
+                              CircleAvatar(
+                                radius: 34,
+                                backgroundColor: const Color(
+                                  0xFF6AA39B,
+                                ).withOpacity(0.12),
+                                backgroundImage: _profileImage != null
+                                    ? FileImage(_profileImage!)
+                                    : null,
+                                child: _profileImage == null
+                                    ? Text(
+                                        _displayName.isNotEmpty
+                                            ? _displayName[0].toUpperCase()
+                                            : "U",
+                                        style: theme.textTheme.headlineMedium
+                                            ?.copyWith(
+                                              color: const Color(0xFF6AA39B),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      )
+                                    : null,
                               ),
-                            )
-                                : null,
+                              Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const CircleAvatar(
+                                  radius: 10,
+                                  backgroundColor: Color(0xFF6AA39B),
+                                  child: Icon(
+                                    Icons.edit,
+                                    size: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const CircleAvatar(
-                            radius: 10,
-                            backgroundColor: Color(0xFF6AA39B),
-                            child: Icon(
-                              Icons.edit,
-                              size: 12,
-                              color: Colors.white,
-                            ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _displayName,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _email,
+                                style: TextStyle(color: Colors.grey[700]),
+                              ),
+                              if (_phone.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  _phone,
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  // NAME + EMAIL + PHONE
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _displayName,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _email,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[700],
-                          ),
-                        ),
-                        if (_phone.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            _phone,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  // CALL & CART ICONS
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _IconCircleButton(
-                        icon: Icons.shopping_bag_outlined,
-                        onTap: () {
-                          // TODO: open orders
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
 
-            const SizedBox(height: 8),
-
-            // SCROLLABLE CONTENT
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
                   const SizedBox(height: 8),
 
-                  // Business/Address Info (Static for now, can be dynamic later)
-                  _SectionTile(
-                    title: 'Address',
-                    subtitle: 'Your saved shipping addresses',
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text('Manage your addresses here.'),
+                  //  CONTENT
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: [
+                        const SizedBox(height: 8),
+
+                        //  Address Section (Dynamic)
+                        _SectionTile(
+                          title: 'Address',
+                          subtitle: 'Your saved shipping addresses',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                selected == null
+                                    ? "No address saved yet."
+                                    : selected.fullAddress,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        //  Orders Section (Dynamic)
+                        _SectionTile(
+                          title: 'My Orders',
+                          subtitle: 'View your order history',
+                          child: _ordersLoading
+                              ? const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 10),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                              : _orders.isEmpty
+                              ? const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 10),
+                                  child: Text("No orders found."),
+                                )
+                              : Column(
+                                  children: _orders.map((o) {
+                                    return ListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      title: Text(
+                                        "Order #${o['id'].toString().length > 6 ? o['id'].toString().substring(0, 6) : o['id']}",
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        "Status: ${o['status'] ?? 'Pending'}",
+                                      ),
+                                      trailing: Text(
+                                        "₹${o['total'] ?? 0}",
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        //  Payment Section (Static placeholder)
+                        const _SimpleExpansionTile(title: "Payment Methods"),
+
+                        const SizedBox(height: 12),
+
+                        //  Settings Section
+                        _SimpleExpansionTile(
+                          title: 'Settings',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SettingsPage(),
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () {},
+                                child: const Text("Change Password"),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.red.shade600,
+                                ),
+                                onPressed: () {},
+                                child: const Text("Delete Account"),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        FilledButton(
+                          onPressed: _handleLogout,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF6AA39B),
+                            minimumSize: const Size.fromHeight(48),
+                          ),
+                          child: const Text("Logout"),
+                        ),
+
+                        const SizedBox(height: 24),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  const _SimpleExpansionTile(title: 'My Orders'),
-                  const _SimpleExpansionTile(title: 'Payment Methods'),
-                  const _SimpleExpansionTile(title: 'Settings'),
-                  const SizedBox(height: 24),
-
-                  // ACTION BUTTONS
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            // TODO: change password logic
-                          },
-                          child: const Text('Change Password'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red.shade600,
-                          ),
-                          onPressed: () {
-                            // TODO: delete account logic
-                          },
-                          child: const Text('Delete Account'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // LOGOUT BUTTON
-                  FilledButton(
-                    onPressed: _handleLogout,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF6AA39B),
-                      minimumSize: const Size.fromHeight(48),
-                    ),
-                    child: const Text('Logout'),
-                  ),
-                  const SizedBox(height: 24),
                 ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
-}
 
-// Reusable small circular icon button
-class _IconCircleButton extends StatelessWidget {
-  const _IconCircleButton({
-    required this.icon,
-    required this.onTap,
-  });
+  Widget _buildAddressBox() {
+    final bool hasAddress =
+        _addressLine1.isNotEmpty ||
+        _addressLine2.isNotEmpty ||
+        _city.isNotEmpty ||
+        _state.isNotEmpty ||
+        _pincode.isNotEmpty;
 
-  final IconData icon;
-  final VoidCallback onTap;
+    if (!hasAddress) {
+      return const Text("No address saved yet.");
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFF6AA39B).withOpacity(0.1),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Icon(
-            icon,
-            size: 18,
-            color: const Color(0xFF6AA39B),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_addressLine1.isNotEmpty)
+          Text(
+            _addressLine1,
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
+        if (_addressLine2.isNotEmpty) Text(_addressLine2),
+        const SizedBox(height: 6),
+        Text(
+          "${_city.isNotEmpty ? _city : ""}${_city.isNotEmpty && _state.isNotEmpty ? ", " : ""}${_state.isNotEmpty ? _state : ""}",
         ),
-      ),
+        if (_pincode.isNotEmpty) Text("Pincode: $_pincode"),
+      ],
+    );
+  }
+
+  Widget _buildOrdersBox() {
+    if (_orders.isEmpty) {
+      return const Text("No orders found.");
+    }
+
+    return Column(
+      children: _orders.take(5).map((o) {
+        final name = o['product_name'] ?? "Product";
+        final price = o['price']?.toString() ?? "0";
+        final status = o['status'] ?? "Pending";
+
+        return ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+          subtitle: Text("Status: $status"),
+          trailing: Text(
+            "₹$price",
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        );
+      }).toList(),
     );
   }
 }
 
-// Collapsible section with title + subtitle + child content
+//  Section Tile
 class _SectionTile extends StatelessWidget {
   const _SectionTile({
     required this.title,
@@ -339,19 +461,16 @@ class _SectionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Theme(
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          tilePadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          childrenPadding:
-          const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           title: Text(
             title,
             style: theme.textTheme.titleMedium?.copyWith(
@@ -360,9 +479,7 @@ class _SectionTile extends StatelessWidget {
           ),
           subtitle: Text(
             subtitle,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.textTheme.bodySmall?.color?.withOpacity(0.8),
-            ),
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
           ),
           children: [child],
         ),
@@ -371,43 +488,38 @@ class _SectionTile extends StatelessWidget {
   }
 }
 
-// Reusable collapsed tiles
 class _SimpleExpansionTile extends StatelessWidget {
-  const _SimpleExpansionTile({required this.title});
+  const _SimpleExpansionTile({required this.title, this.onTap});
 
   final String title;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Theme(
-        data: theme.copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          title: Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          children: const [
-            Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Align(
-                alignment: Alignment.centerLeft,
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Card(
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          child: Row(
+            children: [
+              Expanded(
                 child: Text(
-                  'Tap to view details.',
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-          ],
+              const Icon(Icons.arrow_forward_ios, size: 14),
+            ],
+          ),
         ),
       ),
     );
