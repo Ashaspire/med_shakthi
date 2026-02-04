@@ -73,10 +73,7 @@ class _ProductFilterSheetState extends State<ProductFilterSheet> {
                   onPressed: () => Navigator.pop(context, filter),
                   child: const Text(
                     'Apply Filters',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                 ),
               ),
@@ -92,10 +89,7 @@ class _ProductFilterSheetState extends State<ProductFilterSheet> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         text,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -122,9 +116,7 @@ class _ProductFilterSheetState extends State<ProductFilterSheet> {
     return CheckboxListTile(
       dense: true,
       title: Text(label, style: const TextStyle(fontSize: 13)),
-      value: label.contains('3')
-          ? filter.expiry3Months
-          : filter.expiry6Months,
+      value: label.contains('3') ? filter.expiry3Months : filter.expiry6Months,
       activeColor: const Color(0xff2b9c8f),
       onChanged: (v) => setState(() => onChanged(v!)),
     );

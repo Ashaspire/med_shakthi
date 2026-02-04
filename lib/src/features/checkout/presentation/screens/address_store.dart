@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'AddressModel.dart';
+import 'package:med_shakthi/src/features/checkout/data/models/address_model.dart';
 
 class AddressStore extends ChangeNotifier {
   final SupabaseClient supabase = Supabase.instance.client;

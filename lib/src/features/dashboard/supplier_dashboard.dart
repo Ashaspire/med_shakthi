@@ -263,20 +263,17 @@ class SupplierDashboardHome extends StatelessWidget {
                   context,
                   MaterialPageRoute(builder: (_) => const OrdersPage()),
                 );
-              }
-              else if (label == "Clients") {
+              } else if (label == "Clients") {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const ChatListScreen()),
                 );
-              }
-              else if (label == "Payouts") {
+              } else if (label == "Payouts") {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const SupplierPayoutPage()),
                 );
-              }
-              else if (label == "Sales") {
+              } else if (label == "Sales") {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("Sales page coming soon")),
                 );
@@ -312,7 +309,6 @@ class SupplierDashboardHome extends StatelessWidget {
       ),
     );
   }
-
 
   Widget _buildPerformanceGrid() {
     return GridView.count(

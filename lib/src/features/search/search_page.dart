@@ -36,17 +36,24 @@ class _SearchPageState extends State<SearchPage> {
   Future<void> loadData() async {
     try {
       // Load medicines
-      final String medicinesCSV =
-          await rootBundle.loadString('assets/data/Medicine_Details.csv');
-      List<List<dynamic>> medicinesTable =
-          const CsvToListConverter().convert(medicinesCSV);
+      final String medicinesCSV = await rootBundle.loadString(
+        'assets/data/Medicine_Details.csv',
+      );
+      List<List<dynamic>> medicinesTable = const CsvToListConverter().convert(
+        medicinesCSV,
+      );
 
       if (medicinesTable.isNotEmpty) {
-        List<String> headers =
-            medicinesTable[0].map((e) => e.toString()).toList();
+        List<String> headers = medicinesTable[0]
+            .map((e) => e.toString())
+            .toList();
         for (int i = 1; i < medicinesTable.length; i++) {
           Map<String, dynamic> medicine = {'type': 'medicine'};
-          for (int j = 0; j < headers.length && j < medicinesTable[i].length; j++) {
+          for (
+            int j = 0;
+            j < headers.length && j < medicinesTable[i].length;
+            j++
+          ) {
             medicine[headers[j]] = medicinesTable[i][j];
           }
           allMedicines.add(medicine);
@@ -54,16 +61,24 @@ class _SearchPageState extends State<SearchPage> {
       }
 
       // Load devices
-      final String devicesCSV = await rootBundle
-          .loadString('assets/data/medical_device_manuals_dataset.csv');
-      List<List<dynamic>> devicesTable =
-          const CsvToListConverter().convert(devicesCSV);
+      final String devicesCSV = await rootBundle.loadString(
+        'assets/data/medical_device_manuals_dataset.csv',
+      );
+      List<List<dynamic>> devicesTable = const CsvToListConverter().convert(
+        devicesCSV,
+      );
 
       if (devicesTable.isNotEmpty) {
-        List<String> headers = devicesTable[0].map((e) => e.toString()).toList();
+        List<String> headers = devicesTable[0]
+            .map((e) => e.toString())
+            .toList();
         for (int i = 1; i < devicesTable.length; i++) {
           Map<String, dynamic> device = {'type': 'device'};
-          for (int j = 0; j < headers.length && j < devicesTable[i].length; j++) {
+          for (
+            int j = 0;
+            j < headers.length && j < devicesTable[i].length;
+            j++
+          ) {
             device[headers[j]] = devicesTable[i][j];
           }
           allDevices.add(device);
@@ -99,8 +114,12 @@ class _SearchPageState extends State<SearchPage> {
       // Search in medicines
       for (var medicine in allMedicines) {
         final name = (medicine['Medicine Name'] ?? '').toString().toLowerCase();
-        final manufacturer = (medicine['Manufacturer'] ?? '').toString().toLowerCase();
-        final composition = (medicine['Composition'] ?? '').toString().toLowerCase();
+        final manufacturer = (medicine['Manufacturer'] ?? '')
+            .toString()
+            .toLowerCase();
+        final composition = (medicine['Composition'] ?? '')
+            .toString()
+            .toLowerCase();
         final uses = (medicine['Uses'] ?? '').toString().toLowerCase();
 
         if (name.contains(searchQuery) ||
@@ -113,9 +132,15 @@ class _SearchPageState extends State<SearchPage> {
 
       // Search in devices
       for (var device in allDevices) {
-        final deviceName = (device['Device_Name'] ?? '').toString().toLowerCase();
-        final manufacturer = (device['Manufacturer'] ?? '').toString().toLowerCase();
-        final modelNumber = (device['Model_Number'] ?? '').toString().toLowerCase();
+        final deviceName = (device['Device_Name'] ?? '')
+            .toString()
+            .toLowerCase();
+        final manufacturer = (device['Manufacturer'] ?? '')
+            .toString()
+            .toLowerCase();
+        final modelNumber = (device['Model_Number'] ?? '')
+            .toString()
+            .toLowerCase();
 
         if (deviceName.contains(searchQuery) ||
             manufacturer.contains(searchQuery) ||
@@ -337,7 +362,10 @@ class _SearchPageState extends State<SearchPage> {
                       width: 80,
                       height: 80,
                       color: Colors.grey[200],
-                      child: const Icon(Icons.medical_services, color: Colors.grey),
+                      child: const Icon(
+                        Icons.medical_services,
+                        color: Colors.grey,
+                      ),
                     );
                   },
                 ),
@@ -372,7 +400,10 @@ class _SearchPageState extends State<SearchPage> {
                         const SizedBox(width: 4),
                         Text(
                           '${(medicine['Excellent Review %'] ?? 0) / 20}',
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
                         ),
                         const Spacer(),
                         Text(
@@ -407,8 +438,10 @@ class _SearchPageState extends State<SearchPage> {
                         final wishlistItem = WishlistItem(
                           id: medicineId,
                           name: medicine['Medicine Name'] ?? 'Unknown',
-                          price: double.tryParse(
-                                  medicine['Price']?.toString() ?? '0') ??
+                          price:
+                              double.tryParse(
+                                medicine['Price']?.toString() ?? '0',
+                              ) ??
                               0.0,
                           image: medicine['Image URL'] ?? '',
                         );
@@ -499,7 +532,10 @@ class _SearchPageState extends State<SearchPage> {
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
                           'Model: ${device['Model_Number']}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -556,8 +592,11 @@ class _SearchPageState extends State<SearchPage> {
                           return Container(
                             height: 200,
                             color: Colors.grey[300],
-                            child: const Icon(Icons.medical_services,
-                                size: 80, color: Colors.grey),
+                            child: const Icon(
+                              Icons.medical_services,
+                              size: 80,
+                              color: Colors.grey,
+                            ),
                           );
                         },
                       ),
@@ -657,10 +696,7 @@ class _SearchPageState extends State<SearchPage> {
                   const SizedBox(height: 20),
                   const Text(
                     'Device Information',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
                   Container(
@@ -693,10 +729,7 @@ class _SearchPageState extends State<SearchPage> {
             const SizedBox(width: 8),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ],
         ),

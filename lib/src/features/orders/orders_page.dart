@@ -52,16 +52,17 @@ class _OrdersPageState extends State<OrdersPage> {
           .eq('user_id', user.id)
           .order('created_at', ascending: false);
 
-      final List<Map<String, dynamic>> list =
-      List<Map<String, dynamic>>.from(res);
+      final List<Map<String, dynamic>> list = List<Map<String, dynamic>>.from(
+        res,
+      );
 
       setState(() {
         _orders = list;
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Failed to fetch orders: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("❌ Failed to fetch orders: $e")));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -108,10 +109,7 @@ class _OrdersPageState extends State<OrdersPage> {
         title: const Text("Orders"),
         centerTitle: true,
         actions: [
-          IconButton(
-            onPressed: _fetchOrders,
-            icon: const Icon(Icons.refresh),
-          ),
+          IconButton(onPressed: _fetchOrders, icon: const Icon(Icons.refresh)),
         ],
       ),
       body: Column(
@@ -166,11 +164,11 @@ class _OrdersPageState extends State<OrdersPage> {
                 : orders.isEmpty
                 ? const Center(child: Text("No orders found."))
                 : ListView.builder(
-              itemCount: orders.length,
-              itemBuilder: (context, index) {
-                return _orderCard(orders[index]);
-              },
-            ),
+                    itemCount: orders.length,
+                    itemBuilder: (context, index) {
+                      return _orderCard(orders[index]);
+                    },
+                  ),
           ),
         ],
       ),
@@ -190,9 +188,7 @@ class _OrdersPageState extends State<OrdersPage> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -213,10 +209,7 @@ class _OrdersPageState extends State<OrdersPage> {
             const SizedBox(height: 6),
 
             // ✅ Item / Brand
-            Text(
-              itemName,
-              style: const TextStyle(fontSize: 14),
-            ),
+            Text(itemName, style: const TextStyle(fontSize: 14)),
             if (brand.isNotEmpty)
               Text(
                 brand,

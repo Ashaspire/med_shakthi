@@ -29,13 +29,7 @@ class _AddProductPageState extends State<AddProductPage> {
   String subCategory = 'Tablets';
 
   final Map<String, List<String>> categoryMap = {
-    'Medicines': [
-      'Tablets',
-      'Syrups',
-      'Capsules',
-      'Injections',
-      'Pain Relief',
-    ],
+    'Medicines': ['Tablets', 'Syrups', 'Capsules', 'Injections', 'Pain Relief'],
     'Supplements': [
       'Protein',
       'Vitamins',
@@ -43,24 +37,9 @@ class _AddProductPageState extends State<AddProductPage> {
       'Weight Gain',
       'Immunity',
     ],
-    'Personal care': [
-      'Skin care',
-      'Hair care',
-      'Body care',
-      'Cosmetics',
-    ],
-    'Baby care': [
-      'Diapers',
-      'Baby Food',
-      'Baby Lotion',
-      'Baby Soap',
-    ],
-    'Devices': [
-      'BP Monitor',
-      'Thermometer',
-      'Glucometer',
-      'Nebulizer',
-    ],
+    'Personal care': ['Skin care', 'Hair care', 'Body care', 'Cosmetics'],
+    'Baby care': ['Diapers', 'Baby Food', 'Baby Lotion', 'Baby Soap'],
+    'Devices': ['BP Monitor', 'Thermometer', 'Glucometer', 'Nebulizer'],
   };
 
   File? imageFile;
@@ -110,8 +89,11 @@ class _AddProductPageState extends State<AddProductPage> {
     try {
       await supabase.storage
           .from('product-images')
-          .upload(fileName, imageFile!,
-          fileOptions: const FileOptions(upsert: true));
+          .upload(
+            fileName,
+            imageFile!,
+            fileOptions: const FileOptions(upsert: true),
+          );
 
       return supabase.storage.from('product-images').getPublicUrl(fileName);
     } catch (e) {
@@ -184,8 +166,10 @@ class _AddProductPageState extends State<AddProductPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F6F5),
       appBar: AppBar(
-        title: const Text('Add New Product',
-            style: TextStyle(color: Colors.black)),
+        title: const Text(
+          'Add New Product',
+          style: TextStyle(color: Colors.black),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -207,8 +191,7 @@ class _AddProductPageState extends State<AddProductPage> {
                   Expanded(child: _input("Unit Size", unitSizeController)),
                 ],
               ),
-              _input("Price", priceController,
-                  keyboard: TextInputType.number),
+              _input("Price", priceController, keyboard: TextInputType.number),
               _supplierIdField(),
               _expiryField(),
               _categoryDropdown(),
@@ -242,8 +225,9 @@ class _AddProductPageState extends State<AddProductPage> {
         readOnly: true,
         onTap: pickExpiryDate,
         validator: (v) => v!.isEmpty ? 'Select expiry date' : null,
-        decoration: _inputDecoration("Expiry Date")
-            .copyWith(suffixIcon: const Icon(Icons.calendar_today)),
+        decoration: _inputDecoration(
+          "Expiry Date",
+        ).copyWith(suffixIcon: const Icon(Icons.calendar_today)),
       ),
     );
   }
@@ -255,8 +239,7 @@ class _AddProductPageState extends State<AddProductPage> {
         value: category,
         decoration: _inputDecoration("Category"),
         items: categoryMap.keys
-            .map((e) =>
-            DropdownMenuItem(value: e, child: Text(e)))
+            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
             .toList(),
         onChanged: (v) {
           setState(() {
@@ -275,8 +258,7 @@ class _AddProductPageState extends State<AddProductPage> {
         value: subCategory,
         decoration: _inputDecoration("Sub Category"),
         items: categoryMap[category]!
-            .map((e) =>
-            DropdownMenuItem(value: e, child: Text(e)))
+            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
             .toList(),
         onChanged: (v) => setState(() => subCategory = v!),
       ),
@@ -290,14 +272,17 @@ class _AddProductPageState extends State<AddProductPage> {
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF4CA6A8),
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
         ),
         onPressed: _isLoading ? null : saveProduct,
         child: _isLoading
             ? const CircularProgressIndicator(color: Colors.white)
-            : const Text('Save Product',
-            style: TextStyle(color: Colors.white, fontSize: 16)),
+            : const Text(
+                'Save Product',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
       ),
     );
   }
@@ -315,18 +300,20 @@ class _AddProductPageState extends State<AddProductPage> {
         ),
         child: imageFile == null
             ? const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
-            SizedBox(height: 8),
-            Text('Tap to add product image',
-                style: TextStyle(color: Colors.grey)),
-          ],
-        )
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
+                  SizedBox(height: 8),
+                  Text(
+                    'Tap to add product image',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              )
             : ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Image.file(imageFile!, fit: BoxFit.cover),
-        ),
+                borderRadius: BorderRadius.circular(20),
+                child: Image.file(imageFile!, fit: BoxFit.cover),
+              ),
       ),
     );
   }
@@ -343,8 +330,11 @@ class _AddProductPageState extends State<AddProductPage> {
     );
   }
 
-  Widget _input(String label, TextEditingController controller,
-      {TextInputType keyboard = TextInputType.text}) {
+  Widget _input(
+    String label,
+    TextEditingController controller, {
+    TextInputType keyboard = TextInputType.text,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: TextFormField(

@@ -35,14 +35,16 @@ class WishlistPage extends StatelessWidget {
                     fontSize: 20,
                   ),
                 ),
-                leading: IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 20,
-                    color: Colors.black87,
-                  ),
-                  onPressed: () => Navigator.maybePop(context),
-                ),
+                leading: Navigator.canPop(context)
+                    ? IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new,
+                          size: 20,
+                          color: Colors.black87,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      )
+                    : null,
               ),
 
               // Empty State or List

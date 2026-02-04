@@ -84,17 +84,11 @@ class SupplierPayoutPage extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 26),
           const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 13, color: Colors.grey),
-          ),
+          Text(title, style: const TextStyle(fontSize: 13, color: Colors.grey)),
           const SizedBox(height: 6),
           Text(
             amount,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -136,10 +130,7 @@ class SupplierPayoutPage extends StatelessWidget {
       children: [
         const Text(
           "Payout History",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         _payoutTile(
@@ -152,11 +143,7 @@ class SupplierPayoutPage extends StatelessWidget {
           amount: "₹ 9,200",
           status: "Completed",
         ),
-        _payoutTile(
-          date: "28 Dec 2025",
-          amount: "₹ 5,100",
-          status: "Pending",
-        ),
+        _payoutTile(date: "28 Dec 2025", amount: "₹ 5,100", status: "Pending"),
       ],
     );
   }
@@ -186,8 +173,9 @@ class SupplierPayoutPage extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 22,
-            backgroundColor:
-            isCompleted ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+            backgroundColor: isCompleted
+                ? Colors.green.withOpacity(0.1)
+                : Colors.orange.withOpacity(0.1),
             child: Icon(
               isCompleted ? Icons.check_circle : Icons.schedule,
               color: isCompleted ? Colors.green : Colors.orange,

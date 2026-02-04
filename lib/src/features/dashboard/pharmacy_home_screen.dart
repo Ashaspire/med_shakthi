@@ -65,11 +65,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
           );
         },
         backgroundColor: const Color(0xFF5A9CA0),
-        child: const Icon(
-          Icons.smart_toy,
-          color: Colors.white,
-          size: 28,
-        ),
+        child: const Icon(Icons.smart_toy, color: Colors.white, size: 28),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
@@ -152,9 +148,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const SearchPage(),
-                ),
+                MaterialPageRoute(builder: (context) => const SearchPage()),
               );
             },
             child: Container(
@@ -287,7 +281,11 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
           // Placeholder for categories, you can map real data here later
           _buildCategoryItem(Icons.medication, "Medicines", Colors.blue[100]!),
           const SizedBox(width: 20),
-          _buildCategoryItem(Icons.medical_services, "Devices", Colors.purple[100]!),
+          _buildCategoryItem(
+            Icons.medical_services,
+            "Devices",
+            Colors.purple[100]!,
+          ),
           const SizedBox(width: 20),
           _buildCategoryItem(Icons.favorite, "Health", Colors.red[100]!),
           const SizedBox(width: 20),
@@ -307,17 +305,14 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const CategoryProductsPage(
-                categoryName: "Medicines",
-              ),
+              builder: (context) =>
+                  const CategoryProductsPage(categoryName: "Medicines"),
             ),
           );
         } else if (label == "Devices") {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const DevicesPage(),
-            ),
+            MaterialPageRoute(builder: (context) => const DevicesPage()),
           );
         }
         // You can add navigation for other categories here as well
@@ -603,11 +598,14 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
                               right: 0,
                               child: Consumer<WishlistService>(
                                 builder: (context, wishlistService, child) {
-                                  final isInWishlist = wishlistService.isInWishlist(product.id);
+                                  final isInWishlist = wishlistService
+                                      .isInWishlist(product.id);
                                   return GestureDetector(
                                     onTap: () {
                                       if (isInWishlist) {
-                                        wishlistService.removeFromWishlist(product.id);
+                                        wishlistService.removeFromWishlist(
+                                          product.id,
+                                        );
                                       } else {
                                         // Convert Product to WishlistItem
                                         final wishlistItem = WishlistItem(
@@ -616,14 +614,20 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
                                           price: product.price,
                                           image: product.image,
                                         );
-                                        wishlistService.addToWishlist(wishlistItem);
+                                        wishlistService.addToWishlist(
+                                          wishlistItem,
+                                        );
                                       }
                                     },
                                     child: Container(
                                       padding: const EdgeInsets.all(6),
                                       child: Icon(
-                                        isInWishlist ? Icons.favorite : Icons.favorite_border,
-                                        color: isInWishlist ? Colors.red : Colors.grey[700],
+                                        isInWishlist
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
+                                        color: isInWishlist
+                                            ? Colors.red
+                                            : Colors.grey[700],
                                         size: 22,
                                       ),
                                     ),

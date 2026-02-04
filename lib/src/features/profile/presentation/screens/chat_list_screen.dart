@@ -25,9 +25,8 @@ class ChatListScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ChatDetailScreen(
-                    clientName: "Client ${index + 1}",
-                  ),
+                  builder: (_) =>
+                      ChatDetailScreen(clientName: "Client ${index + 1}"),
                 ),
               );
             },
@@ -79,14 +78,11 @@ class ChatListScreen extends StatelessWidget {
                         backgroundColor: Color(0xFF4CA6A8),
                         child: Text(
                           "2",
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.white,
-                          ),
+                          style: TextStyle(fontSize: 11, color: Colors.white),
                         ),
-                      )
+                      ),
                     ],
-                  )
+                  ),
                 ],
               ),
             ),

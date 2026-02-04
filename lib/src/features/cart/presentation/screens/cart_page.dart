@@ -3,10 +3,9 @@ import 'package:provider/provider.dart';
 
 // Imports from your snippet (Provider & Data)
 // Corrected paths based on your previous file structure
-import '../../../checkout/presentation/screens/AddressSelectScreen.dart';
+import '../../../checkout/presentation/screens/address_select_screen.dart';
 import '../../data/cart_data.dart';
 import '../../data/cart_item.dart';
-import '../../../wishlist/presentation/screens/wishlist_page.dart';
 
 class CartPage extends StatelessWidget {
   const CartPage({super.key});
@@ -54,20 +53,6 @@ class CartPage extends StatelessWidget {
                           onPressed: () => Navigator.maybePop(context),
                         ),
                         actions: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.favorite_border,
-                              color: Colors.black87,
-                            ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const WishlistPage(),
-                                ),
-                              );
-                            },
-                          ),
                           IconButton(
                             icon: const Icon(
                               Icons.delete_outline,
@@ -380,22 +365,25 @@ class _CartItemCard extends StatelessWidget {
         child: Row(
           children: [
             // Image with gray background
-            Container(
-              width: 80,
-              height: 80,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey[50], // Improved background color
-                borderRadius: BorderRadius.circular(15),
+            Hero(
+              tag: item.id,
+              child: Container(
+                width: 80,
+                height: 80,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50], // Improved background color
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: item.imagePath?.startsWith('http') ?? false
+                    ? Image.network(item.imagePath!, fit: BoxFit.contain)
+                    : Image.asset(
+                        item.imagePath ?? '',
+                        fit: BoxFit.contain,
+                        errorBuilder: (c, o, s) =>
+                            Icon(Icons.medication, color: Colors.grey[300]),
+                      ),
               ),
-              child: item.imagePath?.startsWith('http') ?? false
-                  ? Image.network(item.imagePath!, fit: BoxFit.contain)
-                  : Image.asset(
-                      item.imagePath ?? '',
-                      fit: BoxFit.contain,
-                      errorBuilder: (c, o, s) =>
-                          Icon(Icons.medication, color: Colors.grey[300]),
-                    ),
             ),
             const SizedBox(width: 16),
 
@@ -435,7 +423,13 @@ class _CartItemCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  _buildQtyBtn(Icons.remove, () => cart.decrement(index)),
+                  _buildQtyBtn(Icons.remove, () {
+                    if (item.quantity > 1) {
+                      cart.decrement(index);
+                    } else {
+                      _showRemoveConfirmation(context, cart, index);
+                    }
+                  }, color: item.quantity == 1 ? Colors.red : null),
                   SizedBox(
                     width: 32,
                     child: Center(
@@ -455,18 +449,55 @@ class _CartItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildQtyBtn(IconData icon, VoidCallback onTap) {
+  Widget _buildQtyBtn(IconData icon, VoidCallback onTap, {Color? color}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(15),
       child: Container(
         width: 30,
         height: 30,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: Icon(icon, size: 16, color: Colors.black54),
+        child: Icon(icon, size: 16, color: color ?? Colors.black54),
+      ),
+    );
+  }
+
+  void _showRemoveConfirmation(BuildContext context, CartData cart, int index) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Remove Item?"),
+        content: const Text("Do you want to remove this item from your cart?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            onPressed: () {
+              cart.remove(index);
+              Navigator.pop(ctx);
+            },
+            child: const Text("Remove", style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

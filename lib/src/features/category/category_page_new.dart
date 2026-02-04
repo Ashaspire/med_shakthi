@@ -38,9 +38,8 @@ class CategoryPageNew extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => CategoryProductsPage(
-                    categoryName: item.title,
-                  ),
+                  builder: (_) =>
+                      CategoryProductsPage(categoryName: item.title),
                 ),
               );
             },
@@ -84,11 +83,7 @@ class CategoryItem {
   final IconData icon;
   final Color color;
 
-  CategoryItem({
-    required this.title,
-    required this.icon,
-    required this.color,
-  });
+  CategoryItem({required this.title, required this.icon, required this.color});
 }
 
 final List<CategoryItem> deviceCategories = [
@@ -97,11 +92,7 @@ final List<CategoryItem> deviceCategories = [
     icon: Icons.thermostat,
     color: Colors.orange,
   ),
-  CategoryItem(
-    title: 'Oximeter',
-    icon: Icons.favorite,
-    color: Colors.red,
-  ),
+  CategoryItem(title: 'Oximeter', icon: Icons.favorite, color: Colors.red),
   CategoryItem(
     title: 'Weighing Scale',
     icon: Icons.monitor_weight,

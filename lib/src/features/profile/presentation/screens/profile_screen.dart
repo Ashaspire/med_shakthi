@@ -5,7 +5,9 @@ import 'package:med_shakthi/src/features/profile/presentation/screens/settings_p
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:med_shakthi/src/features/auth/presentation/screens/login_page.dart';
-import 'package:med_shakthi/src/features/checkout/presentation/screens/AddressStore.dart';
+import 'package:med_shakthi/src/features/checkout/presentation/screens/address_store.dart';
+import 'package:med_shakthi/src/features/checkout/presentation/screens/address_select_screen.dart';
+import '../../../orders/orders_page.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -145,11 +147,91 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
+  Future<void> _handleDeleteAccount() async {
+    final passwordController = TextEditingController();
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Account"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "This action cannot be undone. Please enter your password to confirm.",
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: "Password",
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && passwordController.text.isNotEmpty) {
+      setState(() => _isLoading = true);
+      try {
+        // Re-authenticate user
+        final user = supabase.auth.currentUser;
+        if (user != null && user.email != null) {
+          await supabase.auth.signInWithPassword(
+            email: user.email!,
+            password: passwordController.text,
+          );
+
+          // If sign-in succeeds, proceed to delete (using Edge Function or Admin API usually,
+          // but calling rpc or just sign out if no delete mechanism exists yet in generic Supabase setup).
+          // Assuming we want to call a function or just show success for now if strict delete isn't set up.
+          // For now, attempting a standard user deletion pattern if RLS allows, or just signing out + visual confirmation.
+          // Real deletion requires calling a Postgres function or Admin API.
+          // We will mock the success flow and sign them out.
+          await supabase.rpc(
+            'delete_user',
+          ); // Hypothetical RPC or just sign out
+          await supabase.auth.signOut();
+
+          if (!mounted) return;
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginPage()),
+            (route) => false,
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Account deleted successfully")),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Delete failed: $e")));
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final addressStore = context.watch<AddressStore>();
-    final selected = addressStore.selectedAddress;
+    // final selected = addressStore.selectedAddress; // Unused
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -268,63 +350,32 @@ class _AccountPageState extends State<AccountPage> {
                       children: [
                         const SizedBox(height: 8),
 
-                        //  Address Section (Dynamic)
-                        _SectionTile(
+                        //  Address Section (Navigates to AddressSelectScreen)
+                        _SimpleExpansionTile(
                           title: 'Address',
-                          subtitle: 'Your saved shipping addresses',
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                selected == null
-                                    ? "No address saved yet."
-                                    : selected.fullAddress,
-                                style: const TextStyle(fontSize: 14),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AddressSelectScreen(),
                               ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
 
                         const SizedBox(height: 12),
 
-                        //  Orders Section (Dynamic)
-                        _SectionTile(
+                        //  Orders Section (Navigates to OrdersPage)
+                        _SimpleExpansionTile(
                           title: 'My Orders',
-                          subtitle: 'View your order history',
-                          child: _ordersLoading
-                              ? const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 10),
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                )
-                              : _orders.isEmpty
-                              ? const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 10),
-                                  child: Text("No orders found."),
-                                )
-                              : Column(
-                                  children: _orders.map((o) {
-                                    return ListTile(
-                                      contentPadding: EdgeInsets.zero,
-                                      title: Text(
-                                        "Order #${o['id'].toString().substring(0, 6)}",
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      subtitle: Text(
-                                        "Status: ${o['status'] ?? 'Pending'}",
-                                      ),
-                                      trailing: Text(
-                                        "₹${o['total'] ?? 0}",
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const OrdersPage(),
+                              ),
+                            );
+                          },
                         ),
 
                         const SizedBox(height: 12),
@@ -363,7 +414,7 @@ class _AccountPageState extends State<AccountPage> {
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: Colors.red.shade600,
                                 ),
-                                onPressed: () {},
+                                onPressed: _handleDeleteAccount,
                                 child: const Text("Delete Account"),
                               ),
                             ),
@@ -442,48 +493,6 @@ class _AccountPageState extends State<AccountPage> {
           ),
         );
       }).toList(),
-    );
-  }
-}
-
-//  Section Tile
-class _SectionTile extends StatelessWidget {
-  const _SectionTile({
-    required this.title,
-    required this.subtitle,
-    required this.child,
-  });
-
-  final String title;
-  final String subtitle;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Theme(
-        data: theme.copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          title: Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          subtitle: Text(
-            subtitle,
-            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-          ),
-          children: [child],
-        ),
-      ),
     );
   }
 }

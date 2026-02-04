@@ -9,7 +9,6 @@ import '../../../cart/data/cart_item.dart';
 // import '../../../models/cart_item.dart';
 import 'package:uuid/uuid.dart';
 
-
 class PaymentMethodScreen extends StatefulWidget {
   const PaymentMethodScreen({super.key});
 
@@ -42,10 +41,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
           Radio<String>(
@@ -57,7 +53,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               });
             },
             activeColor: Colors.teal,
-          )
+          ),
         ],
       ),
     );
@@ -68,16 +64,16 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     final user = supabase.auth.currentUser;
 
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("User not logged in")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("User not logged in")));
       return;
     }
 
     if (cart.items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Cart is empty")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Cart is empty")));
       return;
     }
 
@@ -128,7 +124,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           "price": item.price,
           "quantity": item.quantity,
           "total_amount": total, // same total for whole order group
-
           //  status check constraint values
           "status": "pending",
           "payment_status": "pending",
@@ -152,14 +147,13 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         MaterialPageRoute(builder: (_) => const OrderSuccessScreen()),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(" Order failed: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(" Order failed: $e")));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -232,7 +226,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.teal,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 16),
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
                     ),
                     child: const Text("Apply"),
                   ),
@@ -252,10 +248,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("Shipping & Tax"),
-                  Text("₹$shipping"),
-                ],
+                children: [const Text("Shipping & Tax"), Text("₹$shipping")],
               ),
 
               const Divider(height: 30),
@@ -269,7 +262,10 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   ),
                   Text(
                     "₹${total.toStringAsFixed(2)}",
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
