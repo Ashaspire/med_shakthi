@@ -406,7 +406,7 @@ class _SearchPageState extends State<SearchPage> {
               // Image
               SmartProductImage(
                 imageUrl: medicine['Image URL'],
-                category: 'Medicine',
+                category: medicine['Medicine Name'] ?? 'Medicine',
                 width: 80,
                 height: 80,
               ),
@@ -528,7 +528,7 @@ class _SearchPageState extends State<SearchPage> {
               // Icon -> Smart Image
               SmartProductImage(
                 imageUrl: null, // Devices might not have images in CSV
-                category: 'Device',
+                category: device['Device_Name'] ?? 'Device',
                 width: 80,
                 height: 80,
               ),

@@ -113,8 +113,8 @@ class _SupplierCategoryPageState extends State<SupplierCategoryPage> {
       response = await supabase
           .from('products')
           .select()
-          .eq('category', category)
-          .eq('sub_category', subCategory)
+          .ilike('category', category)
+          .ilike('sub_category', subCategory)
           .limit(50);
     }
 
@@ -251,7 +251,7 @@ class _SupplierCategoryPageState extends State<SupplierCategoryPage> {
                                   },
                                   child: _buildTile(
                                     title: itemName,
-                                    icon: _getSubCategoryIcon(itemName),
+                                    icon: getSubCategoryIcon(itemName),
                                   ),
                                 );
                               } else {
@@ -259,7 +259,10 @@ class _SupplierCategoryPageState extends State<SupplierCategoryPage> {
                                 return _buildTile(
                                   title: product['name'],
                                   subtitle: "₹${product['price'] ?? '--'}",
-                                  icon: Icons.medication,
+                                  icon: getSubCategoryIcon(
+                                    product['sub_category'] ?? "",
+                                  ),
+                                  imageUrl: product['image_url'],
                                 );
                               }
                             },
@@ -278,9 +281,12 @@ class _SupplierCategoryPageState extends State<SupplierCategoryPage> {
     required String title,
     String? subtitle,
     required IconData icon,
+    String? imageUrl,
   }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(
+        14,
+      ), // Reduced padding if image is present? No, keep consistent.
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
@@ -295,12 +301,29 @@ class _SupplierCategoryPageState extends State<SupplierCategoryPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 30, color: themeColor),
+          if (imageUrl != null && imageUrl.isNotEmpty)
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(icon, size: 30, color: themeColor);
+                  },
+                ),
+              ),
+            )
+          else
+            Icon(icon, size: 30, color: themeColor),
           const SizedBox(height: 8),
           Text(
             title,
             textAlign: TextAlign.center,
             style: const TextStyle(fontWeight: FontWeight.w600),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 4),
@@ -312,7 +335,7 @@ class _SupplierCategoryPageState extends State<SupplierCategoryPage> {
   }
 }
 
-IconData _getSubCategoryIcon(String subCategory) {
+IconData getSubCategoryIcon(String subCategory) {
   switch (subCategory) {
     // Medicines
     case "Tablets":

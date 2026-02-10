@@ -86,21 +86,44 @@ class SmartProductImage extends StatelessWidget {
 
     if (cat.contains('medicine') ||
         cat.contains('tablet') ||
-        cat.contains('syrup')) {
-      icon = Icons.medication_liquid;
+        cat.contains('capsule') ||
+        cat.contains('pain relief') ||
+        cat.contains('injection')) {
+      icon = Icons.medication;
       baseColor = Colors.teal;
+    } else if (cat.contains('syrup') || cat.contains('liquid')) {
+      icon = Icons.liquor;
+      baseColor = Colors.orange;
     } else if (cat.contains('device') ||
         cat.contains('equipment') ||
-        cat.contains('thermometer')) {
+        cat.contains('thermometer') ||
+        cat.contains('monitor') ||
+        cat.contains('glucometer') ||
+        cat.contains('nebulizer') ||
+        cat.contains('bp')) {
       icon = Icons.medical_services_outlined;
       baseColor = Colors.indigo;
-    } else if (cat.contains('baby') || cat.contains('care')) {
+    } else if (cat.contains('baby') ||
+        cat.contains('diaper') ||
+        cat.contains('infant')) {
       icon = Icons.child_care;
       baseColor = Colors.pink;
-    } else if (cat.contains('vitamin') || cat.contains('supplement')) {
+    } else if (cat.contains('vitamin') ||
+        cat.contains('supplement') ||
+        cat.contains('protein') ||
+        cat.contains('omega') ||
+        cat.contains('immunity')) {
       icon = Icons.local_florist;
-      baseColor = Colors.orange;
-    } else if (cat.contains('personal') || cat.contains('hygiene')) {
+      baseColor = Colors.green;
+    } else if (cat.contains('personal') ||
+        cat.contains('hygiene') ||
+        cat.contains('skin') ||
+        cat.contains('hair') ||
+        cat.contains('face') ||
+        cat.contains('body') ||
+        cat.contains('soap') ||
+        cat.contains('lotion') ||
+        cat.contains('cosmetic')) {
       icon = Icons.clean_hands;
       baseColor = Colors.cyan;
     }
