@@ -84,6 +84,7 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: Icons.logout,
             onTap: () async {
               // Clear local state
+              if (!mounted) return;
               context.read<CartData>().clearLocalStateOnly();
               context.read<WishlistService>().clearWishlist();
 
