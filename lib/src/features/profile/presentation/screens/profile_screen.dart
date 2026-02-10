@@ -5,7 +5,7 @@ import 'package:med_shakthi/src/features/profile/presentation/screens/settings_p
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:med_shakthi/src/features/auth/presentation/screens/login_page.dart';
-import 'package:med_shakthi/src/features/checkout/presentation/screens/address_store.dart';
+
 import 'package:med_shakthi/src/features/checkout/presentation/screens/address_select_screen.dart';
 import 'package:med_shakthi/src/features/cart/data/cart_data.dart';
 import 'package:med_shakthi/src/features/wishlist/data/wishlist_service.dart';
@@ -33,21 +33,12 @@ class _AccountPageState extends State<AccountPage> {
   String _phone = "";
 
   //  Address fields
-  String _addressLine1 = "";
-  String _addressLine2 = "";
-  String _city = "";
-  String _state = "";
-  String _pincode = "";
-
-  //  Orders list
-  List<Map<String, dynamic>> _orders = [];
-  bool _ordersLoading = false;
 
   @override
   void initState() {
     super.initState();
     _fetchUserData();
-    _fetchOrders();
+    // _fetchOrders();
   }
 
   Future<void> _fetchUserData() async {
@@ -82,42 +73,11 @@ class _AccountPageState extends State<AccountPage> {
         setState(() {
           _displayName = data['name'] ?? _displayName;
           _phone = data['phone'] ?? _phone;
-
-          _addressLine1 = data['address_line1'] ?? "";
-          _addressLine2 = data['address_line2'] ?? "";
-          _city = data['city'] ?? "";
-          _state = data['state'] ?? "";
-          _pincode = data['pincode'] ?? "";
         });
       }
     } catch (_) {}
 
     if (mounted) setState(() => _isLoading = false);
-  }
-
-  Future<void> _fetchOrders() async {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
-
-    setState(() => _ordersLoading = true);
-
-    try {
-      final data = await supabase
-          .from('orders')
-          .select()
-          .eq('user_id', user.id)
-          .order('created_at', ascending: false);
-
-      if (mounted) {
-        setState(() {
-          _orders = List<Map<String, dynamic>>.from(data);
-        });
-      }
-    } catch (e) {
-      debugPrint("Orders Error: $e");
-    } finally {
-      if (mounted) setState(() => _ordersLoading = false);
-    }
   }
 
   Future<void> _handleLogout() async {
@@ -238,7 +198,7 @@ class _AccountPageState extends State<AccountPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final addressStore = context.watch<AddressStore>();
+    // final addressStore = context.watch<AddressStore>(); // Unused
     // final selected = addressStore.selectedAddress; // Unused
 
     return Scaffold(
@@ -464,60 +424,6 @@ class _AccountPageState extends State<AccountPage> {
                 ],
               ),
       ),
-    );
-  }
-
-  Widget _buildAddressBox() {
-    final bool hasAddress =
-        _addressLine1.isNotEmpty ||
-        _addressLine2.isNotEmpty ||
-        _city.isNotEmpty ||
-        _state.isNotEmpty ||
-        _pincode.isNotEmpty;
-
-    if (!hasAddress) {
-      return const Text("No address saved yet.");
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_addressLine1.isNotEmpty)
-          Text(
-            _addressLine1,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-        if (_addressLine2.isNotEmpty) Text(_addressLine2),
-        const SizedBox(height: 6),
-        Text(
-          "${_city.isNotEmpty ? _city : ""}${_city.isNotEmpty && _state.isNotEmpty ? ", " : ""}${_state.isNotEmpty ? _state : ""}",
-        ),
-        if (_pincode.isNotEmpty) Text("Pincode: $_pincode"),
-      ],
-    );
-  }
-
-  Widget _buildOrdersBox() {
-    if (_orders.isEmpty) {
-      return const Text("No orders found.");
-    }
-
-    return Column(
-      children: _orders.take(5).map((o) {
-        final name = o['product_name'] ?? "Product";
-        final price = o['price']?.toString() ?? "0";
-        final status = o['status'] ?? "Pending";
-
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-          subtitle: Text("Status: $status"),
-          trailing: Text(
-            "₹$price",
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        );
-      }).toList(),
     );
   }
 }

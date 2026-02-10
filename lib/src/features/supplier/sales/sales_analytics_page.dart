@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
 
 class SalesAnalyticsPage extends StatefulWidget {
   const SalesAnalyticsPage({super.key});
@@ -132,8 +131,8 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.3)
-                : Colors.black.withOpacity(0.05),
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -169,8 +168,9 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
                       color: isSelected
                           ? Colors.white
                           : (isDark ? Colors.white70 : Colors.black54),
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
                       fontSize: 13,
                     ),
                   ),
@@ -228,8 +228,14 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, String change,
-      IconData icon, Color color, bool isDark) {
+  Widget _buildSummaryCard(
+    String title,
+    String value,
+    String change,
+    IconData icon,
+    Color color,
+    bool isDark,
+  ) {
     return FadeTransition(
       opacity: _animationController,
       child: Container(
@@ -239,7 +245,7 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -255,18 +261,20 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(icon, color: color, size: 24),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: change.startsWith('+')
-                        ? const Color(0xFF10B981).withOpacity(0.1)
-                        : const Color(0xFFEF4444).withOpacity(0.1),
+                        ? const Color(0xFF10B981).withValues(alpha: 0.1)
+                        : const Color(0xFFEF4444).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -315,11 +323,7 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          _buildFilterChip(
-            '📅 ${_selectedDateRange}',
-            isDark,
-            () => {},
-          ),
+          _buildFilterChip('📅 $_selectedDateRange', isDark, () => {}),
           const SizedBox(width: 8),
           _buildFilterChip(
             '🗂 Category: $_selectedCategory',
@@ -346,14 +350,14 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
           color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFF4CA6A8).withOpacity(0.3),
+            color: const Color(0xFF4CA6A8).withValues(alpha: 0.3),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
               color: isDark
-                  ? Colors.black.withOpacity(0.2)
-                  : Colors.black.withOpacity(0.05),
+                  ? Colors.black.withValues(alpha: 0.2)
+                  : Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -403,8 +407,8 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.3)
-                : Colors.black.withOpacity(0.05),
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -419,8 +423,8 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
             getDrawingHorizontalLine: (value) {
               return FlLine(
                 color: isDark
-                    ? Colors.white.withOpacity(0.05)
-                    : Colors.black.withOpacity(0.05),
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.05),
                 strokeWidth: 1,
               );
             },
@@ -445,7 +449,15 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
               sideTitles: SideTitles(
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
-                  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                  const days = [
+                    'Mon',
+                    'Tue',
+                    'Wed',
+                    'Thu',
+                    'Fri',
+                    'Sat',
+                    'Sun',
+                  ];
                   if (value.toInt() >= 0 && value.toInt() < days.length) {
                     return Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -506,8 +518,8 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
                 show: true,
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFF4CA6A8).withOpacity(0.3),
-                    const Color(0xFF4CA6A8).withOpacity(0.0),
+                    const Color(0xFF4CA6A8).withValues(alpha: 0.3),
+                    const Color(0xFF4CA6A8).withValues(alpha: 0.0),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -530,8 +542,8 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.3)
-                : Colors.black.withOpacity(0.05),
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -576,7 +588,12 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
               sideTitles: SideTitles(
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
-                  const categories = ['Medicines', 'Supplements', 'Devices', 'Others'];
+                  const categories = [
+                    'Medicines',
+                    'Supplements',
+                    'Devices',
+                    'Others',
+                  ];
                   if (value.toInt() >= 0 && value.toInt() < categories.length) {
                     return Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -607,8 +624,8 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
             getDrawingHorizontalLine: (value) {
               return FlLine(
                 color: isDark
-                    ? Colors.white.withOpacity(0.05)
-                    : Colors.black.withOpacity(0.05),
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.05),
                 strokeWidth: 1,
               );
             },
@@ -632,7 +649,7 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
         BarChartRodData(
           toY: y,
           gradient: LinearGradient(
-            colors: [color, color.withOpacity(0.7)],
+            colors: [color, color.withValues(alpha: 0.7)],
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
           ),
@@ -653,8 +670,8 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.3)
-                : Colors.black.withOpacity(0.05),
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -712,11 +729,26 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildLegendItem('Paid', '₹6.1L', const Color(0xFF10B981), isDark),
+                _buildLegendItem(
+                  'Paid',
+                  '₹6.1L',
+                  const Color(0xFF10B981),
+                  isDark,
+                ),
                 const SizedBox(height: 12),
-                _buildLegendItem('Pending', '₹2.0L', const Color(0xFFF59E0B), isDark),
+                _buildLegendItem(
+                  'Pending',
+                  '₹2.0L',
+                  const Color(0xFFF59E0B),
+                  isDark,
+                ),
                 const SizedBox(height: 12),
-                _buildLegendItem('Failed', '₹0.9L', const Color(0xFFEF4444), isDark),
+                _buildLegendItem(
+                  'Failed',
+                  '₹0.9L',
+                  const Color(0xFFEF4444),
+                  isDark,
+                ),
               ],
             ),
           ),
@@ -725,16 +757,18 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
     );
   }
 
-  Widget _buildLegendItem(String label, String value, Color color, bool isDark) {
+  Widget _buildLegendItem(
+    String label,
+    String value,
+    Color color,
+    bool isDark,
+  ) {
     return Row(
       children: [
         Container(
           width: 12,
           height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 8),
         Column(
@@ -778,8 +812,8 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.3)
-                : Colors.black.withOpacity(0.05),
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -790,7 +824,9 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
           final index = entry.key;
           final product = entry.value;
           return Padding(
-            padding: EdgeInsets.only(bottom: index < products.length - 1 ? 16 : 0),
+            padding: EdgeInsets.only(
+              bottom: index < products.length - 1 ? 16 : 0,
+            ),
             child: Column(
               children: [
                 Row(
@@ -801,8 +837,14 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: index == 0
-                              ? [const Color(0xFFFFD700), const Color(0xFFFFA500)]
-                              : [const Color(0xFF4CA6A8), const Color(0xFF63B4B7)],
+                              ? [
+                                  const Color(0xFFFFD700),
+                                  const Color(0xFFFFA500),
+                                ]
+                              : [
+                                  const Color(0xFF4CA6A8),
+                                  const Color(0xFF63B4B7),
+                                ],
                         ),
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -836,8 +878,8 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
                             child: LinearProgressIndicator(
                               value: product['percentage'] as double,
                               backgroundColor: isDark
-                                  ? Colors.white.withOpacity(0.1)
-                                  : Colors.black.withOpacity(0.05),
+                                  ? Colors.white.withValues(alpha: 0.1)
+                                  : Colors.black.withValues(alpha: 0.05),
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 index == 0
                                     ? const Color(0xFFFFD700)
@@ -865,8 +907,8 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
                     padding: const EdgeInsets.only(top: 16),
                     child: Divider(
                       color: isDark
-                          ? Colors.white.withOpacity(0.05)
-                          : Colors.black.withOpacity(0.05),
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.black.withValues(alpha: 0.05),
                       height: 1,
                     ),
                   ),
@@ -886,7 +928,7 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
         'qty': '120',
         'amount': '₹12,400',
         'status': 'Paid',
-        'date': '09 Feb 2026'
+        'date': '09 Feb 2026',
       },
       {
         'id': '#ORD-1246',
@@ -894,7 +936,7 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
         'qty': '80',
         'amount': '₹8,900',
         'status': 'Pending',
-        'date': '08 Feb 2026'
+        'date': '08 Feb 2026',
       },
       {
         'id': '#ORD-1245',
@@ -902,7 +944,7 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
         'qty': '60',
         'amount': '₹7,200',
         'status': 'Paid',
-        'date': '08 Feb 2026'
+        'date': '08 Feb 2026',
       },
       {
         'id': '#ORD-1244',
@@ -910,7 +952,7 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
         'qty': '45',
         'amount': '₹5,400',
         'status': 'Failed',
-        'date': '07 Feb 2026'
+        'date': '07 Feb 2026',
       },
     ];
 
@@ -921,8 +963,8 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.3)
-                : Colors.black.withOpacity(0.05),
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -940,8 +982,8 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
                     height: 40,
                     decoration: BoxDecoration(
                       color: isDark
-                          ? Colors.white.withOpacity(0.05)
-                          : Colors.black.withOpacity(0.03),
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.black.withValues(alpha: 0.03),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: TextField(
@@ -961,7 +1003,9 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
                           size: 20,
                         ),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                        ),
                       ),
                     ),
                   ),
@@ -978,8 +1022,11 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
                   ),
                   child: Row(
                     children: const [
-                      Icon(Icons.file_download_outlined,
-                          color: Colors.white, size: 18),
+                      Icon(
+                        Icons.file_download_outlined,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                       SizedBox(width: 6),
                       Text(
                         'Export',
@@ -1002,8 +1049,8 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
             child: DataTable(
               headingRowColor: WidgetStateProperty.all(
                 isDark
-                    ? Colors.white.withOpacity(0.03)
-                    : Colors.black.withOpacity(0.02),
+                    ? Colors.white.withValues(alpha: 0.03)
+                    : Colors.black.withValues(alpha: 0.02),
               ),
               dataRowColor: WidgetStateProperty.all(Colors.transparent),
               columns: [
@@ -1112,13 +1159,15 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
                     DataCell(
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: transaction['status'] == 'Paid'
-                              ? const Color(0xFF10B981).withOpacity(0.1)
+                              ? const Color(0xFF10B981).withValues(alpha: 0.1)
                               : transaction['status'] == 'Pending'
-                                  ? const Color(0xFFF59E0B).withOpacity(0.1)
-                                  : const Color(0xFFEF4444).withOpacity(0.1),
+                              ? const Color(0xFFF59E0B).withValues(alpha: 0.1)
+                              : const Color(0xFFEF4444).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -1129,8 +1178,8 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
                             color: transaction['status'] == 'Paid'
                                 ? const Color(0xFF10B981)
                                 : transaction['status'] == 'Pending'
-                                    ? const Color(0xFFF59E0B)
-                                    : const Color(0xFFEF4444),
+                                ? const Color(0xFFF59E0B)
+                                : const Color(0xFFEF4444),
                           ),
                         ),
                       ),
@@ -1225,8 +1274,9 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
-                children: ['All', 'Medicines', 'Supplements', 'Devices']
-                    .map((category) {
+                children: ['All', 'Medicines', 'Supplements', 'Devices'].map((
+                  category,
+                ) {
                   return ChoiceChip(
                     label: Text(category),
                     selected: _selectedCategory == category,

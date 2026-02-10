@@ -64,8 +64,6 @@ class _ReturnProductPageState extends State<ReturnProductPage> {
   }
 
   void submitReturnRequest() {
-    final comment = commentController.text.trim();
-
     if (returnImageFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
