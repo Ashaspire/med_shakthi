@@ -26,27 +26,27 @@ class _SupplierCategoryPageState extends State<SupplierCategoryPage> {
   final List<Map<String, dynamic>> baseCategories = [
     {
       "name": "Medicines",
-      "icon": Icons.medication_outlined,
+      "icon": Icons.medication_rounded,
       "items": ["Tablets", "Syrups", "Capsules", "Injections", "Pain Relief"],
     },
     {
       "name": "Supplements",
-      "icon": Icons.local_pharmacy_outlined,
+      "icon": Icons.healing_rounded,
       "items": ["Protein", "Vitamins", "Omega 3", "Weight Gain", "Immunity"],
     },
     {
       "name": "Personal Care",
-      "icon": Icons.spa_outlined,
+      "icon": Icons.face_retouching_natural_rounded,
       "items": ["Skin Care", "Hair Care", "Body Care", "Cosmetics"],
     },
     {
       "name": "Baby Care",
-      "icon": Icons.child_friendly_outlined,
+      "icon": Icons.child_care_rounded,
       "items": ["Diapers", "Baby Food", "Baby Lotion", "Baby Soap"],
     },
     {
       "name": "Devices",
-      "icon": Icons.monitor_heart_outlined,
+      "icon": Icons.medical_services_rounded,
       "items": ["BP Monitor", "Thermometer", "Glucometer", "Nebulizer"],
     },
   ];
@@ -127,9 +127,7 @@ class _SupplierCategoryPageState extends State<SupplierCategoryPage> {
   @override
   Widget build(BuildContext context) {
     if (loadingCustomCats) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final selectedCategory = categories[selectedCategoryIndex];
@@ -176,18 +174,17 @@ class _SupplierCategoryPageState extends State<SupplierCategoryPage> {
                           : Theme.of(context).cardColor,
                       border: Border(
                         left: BorderSide(
-                          color:
-                              isSelected ? themeColor : Colors.transparent,
+                          color: isSelected ? themeColor : Colors.transparent,
                           width: 4,
                         ),
                       ),
                     ),
                     child: Column(
                       children: [
-                        Icon(cat["icon"],
-                            color: isSelected
-                                ? themeColor
-                                : Colors.grey),
+                        Icon(
+                          cat["icon"],
+                          color: isSelected ? themeColor : Colors.grey,
+                        ),
                         const SizedBox(height: 6),
                         Text(
                           cat["name"],
@@ -226,20 +223,18 @@ class _SupplierCategoryPageState extends State<SupplierCategoryPage> {
                   const SizedBox(height: 12),
                   Expanded(
                     child: loadingProducts
-                        ? const Center(
-                            child: CircularProgressIndicator(),
-                          )
+                        ? const Center(child: CircularProgressIndicator())
                         : GridView.builder(
                             itemCount: selectedSubCategory == null
                                 ? (selectedCategory["items"] as List).length
                                 : products.length,
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 14,
-                              crossAxisSpacing: 14,
-                              childAspectRatio: 1.2,
-                            ),
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 14,
+                                  crossAxisSpacing: 14,
+                                  childAspectRatio: 1.2,
+                                ),
                             itemBuilder: (context, i) {
                               if (selectedSubCategory == null) {
                                 final itemName =
@@ -250,22 +245,20 @@ class _SupplierCategoryPageState extends State<SupplierCategoryPage> {
                                       selectedSubCategory = itemName;
                                     });
                                     fetchProducts(
-                                      category:
-                                          selectedCategory["name"],
+                                      category: selectedCategory["name"],
                                       subCategory: itemName,
                                     );
                                   },
                                   child: _buildTile(
                                     title: itemName,
-                                    icon: Icons.category_outlined,
+                                    icon: _getSubCategoryIcon(itemName),
                                   ),
                                 );
                               } else {
                                 final product = products[i];
                                 return _buildTile(
                                   title: product['name'],
-                                  subtitle:
-                                      "₹${product['price'] ?? '--'}",
+                                  subtitle: "₹${product['price'] ?? '--'}",
                                   icon: Icons.medication,
                                 );
                               }
@@ -316,5 +309,66 @@ class _SupplierCategoryPageState extends State<SupplierCategoryPage> {
         ],
       ),
     );
+  }
+}
+
+IconData _getSubCategoryIcon(String subCategory) {
+  switch (subCategory) {
+    // Medicines
+    case "Tablets":
+      return Icons.local_pharmacy;
+    case "Syrups":
+      return Icons.liquor;
+    case "Capsules":
+      return Icons.medication;
+    case "Injections":
+      return Icons.vaccines;
+    case "Pain Relief":
+      return Icons.healing;
+
+    // Supplements
+    case "Protein":
+      return Icons.fitness_center;
+    case "Vitamins":
+      return Icons.local_pharmacy;
+    case "Omega 3":
+      return Icons.water_drop;
+    case "Weight Gain":
+      return Icons.monitor_weight;
+    case "Immunity":
+      return Icons.shield;
+
+    // Personal Care
+    case "Skin Care":
+      return Icons.face;
+    case "Hair Care":
+      return Icons.content_cut;
+    case "Body Care":
+      return Icons.spa;
+    case "Cosmetics":
+      return Icons.brush;
+
+    // Baby Care
+    case "Diapers":
+      return Icons.child_care;
+    case "Baby Food":
+      return Icons.rice_bowl;
+    case "Baby Lotion":
+      return Icons.clean_hands;
+    case "Baby Soap":
+      return Icons.soap;
+
+    // Devices
+    case "BP Monitor":
+      return Icons.monitor_heart;
+    case "Thermometer":
+      return Icons.thermostat;
+    case "Glucometer":
+      return Icons.bloodtype;
+    case "Nebulizer":
+      return Icons.air;
+
+    default:
+      return Icons.category_outlined;
   }
 }

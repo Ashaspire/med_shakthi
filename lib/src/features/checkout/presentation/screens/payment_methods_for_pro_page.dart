@@ -40,16 +40,20 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7F9),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           "Payment Methods",
-          style: TextStyle(color: Colors.black),
+          style: TextStyle(
+            color: Theme.of(context).appBarTheme.foregroundColor,
+          ),
         ),
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(
+          color: Theme.of(context).appBarTheme.foregroundColor,
+        ),
       ),
       body: Column(
         children: [
@@ -74,7 +78,7 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
                     margin: const EdgeInsets.only(bottom: 14),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected
@@ -112,8 +116,10 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
                               const SizedBox(height: 4),
                               Text(
                                 method["details"],
-                                style: const TextStyle(
-                                  color: Colors.grey,
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall?.color,
                                   fontSize: 13,
                                 ),
                               ),

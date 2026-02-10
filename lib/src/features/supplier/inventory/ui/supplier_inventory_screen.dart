@@ -175,12 +175,7 @@ class _SupplierInventoryScreenState extends State<SupplierInventoryScreen> {
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.blue),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AddProductPage(product: product.toMap()),
-                ),
-              ).then((_) => setState(() {}));
+              // TODO: Navigate to Edit Product Page
             },
           ),
           IconButton(

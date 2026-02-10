@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
@@ -30,7 +31,7 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
     super.initState();
 
     Future.microtask(() {
-      context.read<AddressStore>().fetchAddresses();
+      if (mounted) context.read<AddressStore>().fetchAddresses();
     });
   }
 
@@ -384,7 +385,8 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
                               );
                             }
 
-                            if (mounted) Navigator.pop(context);
+                            if (!mounted) return;
+                            Navigator.pop(context);
                           },
                           child: const Text(
                             "CONFIRM LOCATION",
@@ -497,69 +499,49 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
                           width: 1.5,
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          // 1. Radio Button for Selection
-                          Transform.scale(
-                            scale: 1.2,
-                            child: Radio<String>(
-                              value: address.id,
-                              groupValue: store.selectedAddress?.id,
-                              activeColor: Colors.teal,
-                              onChanged: (val) {
-                                if (val != null) store.selectAddressLocal(val);
-                              },
-                            ),
+                      child: RadioListTile<String>(
+                        value: address.id,
+                        groupValue: store.selectedAddress?.id,
+                        activeColor: Colors.teal,
+                        onChanged: (val) {
+                          if (val != null) store.selectAddressLocal(val);
+                        },
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        title: Text(
+                          address.title,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: address.isSelected
+                                ? Colors.teal
+                                : Theme.of(context).textTheme.bodyLarge?.color,
                           ),
-
-                          // 2. Address Details
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  address.title,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    color: address.isSelected
-                                        ? Colors.teal
-                                        : Theme.of(
-                                            context,
-                                          ).textTheme.bodyLarge?.color,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  address.fullAddress,
-                                  style: TextStyle(
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.color
-                                        ?.withValues(alpha: 0.6),
-                                    fontSize: 14,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Text(
+                            address.fullAddress,
+                            style: TextStyle(
+                              color: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.color
+                                  ?.withValues(alpha: 0.6),
+                              fontSize: 14,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-
-                          // 3. Edit (Pencil) Button
-                          IconButton(
-                            onPressed: () {
-                              _showAddAddressBottomSheet(
-                                addressToEdit: address,
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.edit,
-                              color: Colors.blueGrey,
-                            ),
-                          ),
-                        ],
+                        ),
+                        secondary: IconButton(
+                          onPressed: () {
+                            _showAddAddressBottomSheet(addressToEdit: address);
+                          },
+                          icon: const Icon(Icons.edit, color: Colors.blueGrey),
+                        ),
                       ),
                     ),
                   ),

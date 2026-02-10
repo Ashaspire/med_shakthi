@@ -61,10 +61,11 @@ class _OrdersPageState extends State<OrdersPage> {
         _orders = list;
       });
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("❌ Failed to fetch orders: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("❌ Failed to fetch orders: $e")));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }

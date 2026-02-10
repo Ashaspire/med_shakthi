@@ -1,34 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OrderDetailsPage extends StatelessWidget {
   final String orderId;
 
   const OrderDetailsPage({super.key, required this.orderId});
-
-  Future<void> _updateStatus(BuildContext context, String status) async {
-    try {
-      final supabase = Supabase.instance.client;
-      await supabase
-          .from('orders')
-          .update({'status': status})
-          .eq('id', orderId);
-
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Order updated to $status'),
-          backgroundColor: status == 'cancelled' ? Colors.red : Colors.green,
-        ),
-      );
-      Navigator.pop(context);
-    } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,14 +60,14 @@ class OrderDetailsPage extends StatelessWidget {
               children: [
                 OutlinedButton(
                   onPressed: () {
-                    _updateStatus(context, 'cancelled');
+                    // TODO: Reject Order
                   },
                   style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
                   child: const Text("Reject"),
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    _updateStatus(context, 'confirmed');
+                    // TODO: Accept / Dispatch Order
                   },
                   child: const Text("Accept Order"),
                 ),

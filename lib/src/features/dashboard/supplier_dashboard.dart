@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../orders/orders_page.dart';
 import '../profile/presentation/screens/chat_list_screen.dart';
 import '../profile/presentation/screens/supplier_category_page.dart';
@@ -7,6 +8,7 @@ import '../profile/presentation/screens/supplier_payout_page.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/theme_provider.dart';
 import '../supplier/inventory/ui/add_product_page.dart';
+import '../supplier/inventory/ui/my_products_page.dart';
 import '../supplier/sales/sales_analytics_page.dart';
 
 class SupplierDashboard extends StatefulWidget {
@@ -27,7 +29,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
     const SupplierCategoryPage(),
     const SizedBox(), // Placeholder for center "Add" button which navigates instead of switching tabs
     const OrdersPage(),
-    const SupplierProfileScreen(),
+    const MyProductsPage(),
   ];
 
   @override
@@ -91,8 +93,8 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               label: "Order",
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              label: "Profile",
+              icon: Icon(Icons.inventory_2_outlined),
+              label: "My Products",
             ),
           ],
         ),
@@ -123,7 +125,7 @@ class SupplierDashboardHome extends StatelessWidget {
           _buildSectionHeader("Performance Stats", context: context),
           const SizedBox(height: 15),
           _buildPerformanceGrid(context),
-          const SizedBox(height: 100), // ✅ CHANGED: Space for FAB
+          const SizedBox(height: 100), // Space for FAB
         ],
       ),
     );
@@ -139,9 +141,19 @@ class SupplierDashboardHome extends StatelessWidget {
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(15),
           ),
-          child: Icon(
-            Icons.grid_view_rounded,
-            color: Theme.of(context).iconTheme.color,
+          child: IconButton(
+            icon: Icon(
+              Icons.person_outline, // Changed from grid_view_rounded
+              color: Theme.of(context).iconTheme.color,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SupplierProfileScreen(),
+                ),
+              );
+            },
           ),
         ),
         const SizedBox(width: 15),
@@ -240,7 +252,9 @@ class SupplierDashboardHome extends StatelessWidget {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: context != null ? Theme.of(context).textTheme.bodyLarge?.color : const Color(0xFF2D2D2D),
+            color: context != null
+                ? Theme.of(context).textTheme.bodyLarge?.color
+                : const Color(0xFF2D2D2D),
           ),
         ),
         const Text(
@@ -316,7 +330,9 @@ class SupplierDashboardHome extends StatelessWidget {
                   label,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -363,8 +379,8 @@ class SupplierDashboardHome extends StatelessWidget {
             height: 55,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark 
-                  ? Colors.white.withOpacity(0.05)
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withValues(alpha: 0.05)
                   : const Color(0xFFF7F8FA),
               borderRadius: BorderRadius.circular(15),
             ),
@@ -375,7 +391,7 @@ class SupplierDashboardHome extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              fontWeight: FontWeight.bold, 
+              fontWeight: FontWeight.bold,
               fontSize: 16,
               color: Theme.of(context).textTheme.bodyLarge?.color,
             ),

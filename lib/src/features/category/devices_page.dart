@@ -113,7 +113,7 @@ class _DevicesPageState extends State<DevicesPage> {
         });
       }
     } catch (e) {
-      print('Error loading CSV: $e');
+      debugPrint('Error loading CSV: $e');
       setState(() {
         isLoading = false;
       });
