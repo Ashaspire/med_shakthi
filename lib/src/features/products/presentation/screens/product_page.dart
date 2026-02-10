@@ -27,7 +27,7 @@ class ProductPage extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    _ProductImageCard(imageUrl: product.image),
+                    _ProductImageCard(product: product),
                     const SizedBox(height: 16),
                     _ProductInfoSection(product: product),
                     const SizedBox(height: 16),
@@ -124,9 +124,9 @@ class _TopBarState extends State<_TopBar> {
 /* ---------------- IMAGE CARD ---------------- */
 
 class _ProductImageCard extends StatelessWidget {
-  final String imageUrl;
+  final Product product;
 
-  const _ProductImageCard({required this.imageUrl});
+  const _ProductImageCard({required this.product});
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +138,8 @@ class _ProductImageCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
       ),
       child: SmartProductImage(
-        imageUrl: imageUrl,
+        imageUrl: product.image,
+        category: product.category, // Pass category for fallback logic
         height: 230,
         fit: BoxFit.contain,
         borderRadius: 0, // Container already has radius

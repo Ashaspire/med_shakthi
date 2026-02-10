@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'add_product_page.dart';
+import '../../../profile/presentation/screens/supplier_category_page.dart';
 
 class MyProductsPage extends StatefulWidget {
   const MyProductsPage({super.key});
@@ -124,16 +125,6 @@ class _MyProductsPageState extends State<MyProductsPage> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AddProductPage()),
-          ).then((_) => setState(() {}));
-        },
-        backgroundColor: const Color(0xFF4CA6A8),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
     );
   }
 
@@ -185,10 +176,29 @@ class _MyProductsPageState extends State<MyProductsPage> {
                   ? Image.network(
                       imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.image_not_supported),
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: Icon(
+                          getSubCategoryIcon(
+                            p['sub_category'] ?? p['category'] ?? "",
+                          ),
+                          color: Theme.of(
+                            context,
+                          ).primaryColor.withValues(alpha: 0.5),
+                          size: 32,
+                        ),
+                      ),
                     )
-                  : const Icon(Icons.image, color: Colors.grey),
+                  : Center(
+                      child: Icon(
+                        getSubCategoryIcon(
+                          p['sub_category'] ?? p['category'] ?? "",
+                        ),
+                        color: Theme.of(
+                          context,
+                        ).primaryColor.withValues(alpha: 0.5),
+                        size: 32,
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: 16),

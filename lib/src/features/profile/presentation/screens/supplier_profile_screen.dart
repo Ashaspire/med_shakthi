@@ -518,10 +518,10 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                 else
                   Text(
                     value.isNotEmpty ? value : "Not Provided",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: Colors.black87,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                     ),
                   ),
               ],

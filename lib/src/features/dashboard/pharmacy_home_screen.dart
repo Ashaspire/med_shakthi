@@ -21,6 +21,7 @@ import 'package:med_shakthi/src/features/cart/data/cart_item.dart';
 import 'package:med_shakthi/src/features/products/data/models/product_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:med_shakthi/src/features/search/search_page.dart';
+import 'package:med_shakthi/src/core/utils/smart_product_image.dart';
 
 /// This screen implements the "Med Shakti home page" for Retailers
 class PharmacyHomeScreen extends StatefulWidget {
@@ -405,15 +406,11 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
           children: [
             Expanded(
               child: Center(
-                child: Image.network(
-                  product.image,
+                child: SmartProductImage(
+                  imageUrl: product.image,
+                  category: product
+                      .category, // Pass category for intelligent fallback
                   fit: BoxFit.contain,
-                  errorBuilder: (c, e, s) => Container(
-                    color: theme.brightness == Brightness.dark
-                        ? Colors.grey[800]
-                        : Colors.grey[100],
-                    child: const Center(child: Icon(Icons.image_not_supported)),
-                  ),
                 ),
               ),
             ),
