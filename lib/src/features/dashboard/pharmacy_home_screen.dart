@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:med_shakthi/src/features/category/category_ui.dart';
+import 'package:med_shakthi/src/features/category/category_products_page.dart';
+import 'package:med_shakthi/src/features/category/devices_page.dart';
+import 'package:med_shakthi/src/features/health/health_page.dart';
+import 'package:med_shakthi/src/features/vitamins/vitamins_page.dart';
 import 'package:med_shakthi/src/features/products/data/repositories/product_repository.dart';
 import 'package:med_shakthi/src/features/wishlist/data/wishlist_service.dart';
 import 'package:med_shakthi/src/features/wishlist/presentation/screens/wishlist_page.dart';
+
 import 'package:med_shakthi/src/features/cart/presentation/screens/cart_page.dart';
 import 'package:med_shakthi/src/features/orders/orders_page.dart';
 import 'package:med_shakthi/src/features/products/presentation/screens/product_page.dart';
 import 'package:provider/provider.dart';
+
+import '../profile/presentation/screens/ai_assistant_page.dart';
+import '../profile/presentation/screens/chat_details_screen.dart';
 import '../profile/presentation/screens/profile_screen.dart';
 import 'package:med_shakthi/src/features/cart/data/cart_data.dart';
 import 'package:med_shakthi/src/features/cart/data/cart_item.dart';
@@ -16,6 +24,8 @@ import 'package:med_shakthi/src/features/chat_support/chat_support_entry.dart';
 import 'package:med_shakthi/src/features/auth/presentation/screens/login_page.dart';
 
 
+import 'package:med_shakthi/src/features/search/search_page.dart';
+import 'package:med_shakthi/src/core/utils/smart_product_image.dart';
 
 /// This screen implements the "Med Shakti home page" for Retailers
 class PharmacyHomeScreen extends StatefulWidget {
@@ -196,6 +206,44 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
                 Text("Search medicine",
                     style: TextStyle(color: Colors.grey)),
               ],
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SearchPage()),
+              );
+            },
+            child: Container(
+              height: 50,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(
+                  color: theme.dividerColor.withValues(alpha: 0.1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.search,
+                    color: theme.iconTheme.color?.withValues(alpha: 0.6),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Search medicine",
+                      style: TextStyle(
+                        color: theme.textTheme.bodySmall?.color?.withValues(
+                          alpha: 0.6,
+                        ),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.camera_alt_outlined, color: theme.iconTheme.color),
+                ],
+              ),
             ),
           ),
         ),
@@ -236,6 +284,11 @@ void _openProfileMenu(BuildContext context) {
         Text(
           title,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.titleLarge?.color,
+          ),
         ),
         GestureDetector(
           onTap: onAction,
@@ -254,19 +307,23 @@ void _openProfileMenu(BuildContext context) {
 
   /// Builds the horizontal list of circular categories
   Widget _buildCategoriesList() {
+    // final theme = Theme.of(context);
     return SizedBox(
       height: 100,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
           // Placeholder for categories, you can map real data here later
-          _buildCategoryItem(Icons.medication, "Medicines", Colors.blue[100]!),
+          _buildCategoryItem(Icons.medication, "Medicines", Colors.blue),
           const SizedBox(width: 20),
           _buildCategoryItem(Icons.favorite, "Health", Colors.red[100]!),
+          _buildCategoryItem(Icons.medical_services, "Devices", Colors.purple),
           const SizedBox(width: 20),
-          _buildCategoryItem(Icons.wb_sunny, "Vitamins", Colors.orange[100]!),
+          _buildCategoryItem(Icons.favorite, "Health", Colors.red),
           const SizedBox(width: 20),
-          _buildCategoryItem(Icons.spa, "Care", Colors.green[100]!),
+          _buildCategoryItem(Icons.wb_sunny, "Vitamins", Colors.orange),
+          const SizedBox(width: 20),
+          _buildCategoryItem(Icons.spa, "Care", Colors.green),
         ],
       ),
     );
@@ -288,6 +345,55 @@ void _openProfileMenu(BuildContext context) {
                 spreadRadius: 2,
               ),
             ],
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: () {
+        // Navigate to CategoryProductsPage when Medicines is tapped
+        if (label == "Medicines") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  const CategoryProductsPage(categoryName: "Medicines"),
+            ),
+          );
+        } else if (label == "Devices") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const DevicesPage()),
+          );
+        } else if (label == "Health") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const HealthPage()),
+          );
+        } else if (label == "Vitamins") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const VitaminsPage()),
+          );
+        }
+        // You can add navigation for other categories here as well
+      },
+      child: Column(
+        children: [
+          Container(
+            height: 60,
+            width: 60,
+            decoration: BoxDecoration(
+              color: color.withValues(
+                alpha: theme.brightness == Brightness.dark ? 0.2 : 0.1,
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: theme.shadowColor.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Center(child: Icon(icon, color: color, size: 28)),
           ),
           child: Center(child: Icon(icon, color: Colors.black54, size: 28)),
         ),
@@ -331,8 +437,10 @@ void _openProfileMenu(BuildContext context) {
           children: [
             Expanded(
               child: Center(
-                child: Image.network(
-                  product.image,
+                child: SmartProductImage(
+                  imageUrl: product.image,
+                  category: product
+                      .category, // Pass category for intelligent fallback
                   fit: BoxFit.contain,
                   errorBuilder: (c, e, s) => Container(
                     color: Colors.grey[100],
@@ -347,11 +455,20 @@ void _openProfileMenu(BuildContext context) {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: theme.textTheme.titleMedium?.color,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               product.category,
               style: const TextStyle(color: Colors.grey, fontSize: 12),
+              style: TextStyle(
+                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: 8),
             Row(
@@ -417,6 +534,7 @@ void _openProfileMenu(BuildContext context) {
 
   /// Fetches Real Products from Supabase
   Widget _buildRealBestsellersList() {
+    // final theme = Theme.of(context);
     return SizedBox(
       height: 260,
       child: FutureBuilder<List<Product>>(
@@ -725,6 +843,11 @@ void _openProfileMenu(BuildContext context) {
             Icon(
               icon,
               color: isSelected ? const Color(0xFF5A9CA0) : Colors.grey,
+              color: isSelected
+                  ? const Color(0xFF5A9CA0)
+                  : Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
               size: 26,
             ),
             const SizedBox(height: 4),
@@ -732,6 +855,11 @@ void _openProfileMenu(BuildContext context) {
               label,
               style: TextStyle(
                 color: isSelected ? const Color(0xFF5A9CA0) : Colors.grey,
+                color: isSelected
+                    ? const Color(0xFF5A9CA0)
+                    : Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
                 fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),

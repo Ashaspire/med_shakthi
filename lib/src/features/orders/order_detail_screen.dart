@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'models/order_detail_model.dart';
+import 'package:med_shakthi/src/core/utils/smart_product_image.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final Map<String, dynamic> orderData;
@@ -72,7 +73,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Theme.of(context).appBarTheme.foregroundColor),
+          icon: Icon(
+            Icons.arrow_back,
+            color: Theme.of(context).appBarTheme.foregroundColor,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -212,14 +216,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: item.imageUrl.isNotEmpty
-                ? Image.network(
-                    item.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.image_not_supported),
-                  )
-                : const Icon(Icons.medication, color: Colors.grey),
+            child: SmartProductImage(
+              imageUrl: item.imageUrl,
+              category: item.brand, // Use brand as fallback category
+              fit: BoxFit.cover,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(

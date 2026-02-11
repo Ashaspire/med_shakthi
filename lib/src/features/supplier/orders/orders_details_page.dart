@@ -3,24 +3,17 @@ import 'package:flutter/material.dart';
 class OrderDetailsPage extends StatelessWidget {
   final String orderId;
 
-  const OrderDetailsPage({
-    super.key,
-    required this.orderId,
-  });
+  const OrderDetailsPage({super.key, required this.orderId});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Order Details"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text("Order Details"), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // 📦 Order Summary
             _sectionTitle("Order Summary"),
             _infoRow("Order ID", orderId), // ✅ dynamic
@@ -33,10 +26,7 @@ class OrderDetailsPage extends StatelessWidget {
             _sectionTitle("Pharmacy Details"),
             _infoRow("Pharmacy Name", "ABC Medicals"),
             _infoRow("Contact", "+91 98765 43210"),
-            _infoRow(
-              "Delivery Address",
-              "12, MG Road, Bengaluru, Karnataka",
-            ),
+            _infoRow("Delivery Address", "12, MG Road, Bengaluru, Karnataka"),
             const SizedBox(height: 20),
 
             // 💊 Items Ordered
@@ -72,9 +62,7 @@ class OrderDetailsPage extends StatelessWidget {
                   onPressed: () {
                     // TODO: Reject Order
                   },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                  ),
+                  style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
                   child: const Text("Reject"),
                 ),
                 ElevatedButton(
@@ -98,10 +86,7 @@ class OrderDetailsPage extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         title,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
     );
   }

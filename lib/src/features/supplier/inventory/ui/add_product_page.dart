@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddProductPage extends StatefulWidget {
-  const AddProductPage({super.key});
+  final Map<String, dynamic>? product; // If null, it's Add mode
+
+  const AddProductPage({super.key, this.product});
 
   @override
   State<AddProductPage> createState() => _AddProductPageState();
@@ -15,6 +17,8 @@ class _AddProductPageState extends State<AddProductPage> {
   final _formKey = GlobalKey<FormState>();
   final supabase = Supabase.instance.client;
 
+  bool get isEditing => widget.product != null;
+
   final nameController = TextEditingController();
   final genericController = TextEditingController();
   final brandController = TextEditingController();
@@ -23,6 +27,10 @@ class _AddProductPageState extends State<AddProductPage> {
   final unitSizeController = TextEditingController();
   final supplierIdController = TextEditingController(text: 'Loading...');
   final expiryController = TextEditingController();
+
+  /// CUSTOM CATEGORY CONTROLLERS
+  final customCategoryController = TextEditingController();
+  final customSubCategoryController = TextEditingController();
 
   /// CATEGORY + SUBCATEGORY
   String category = 'Medicines';
@@ -40,9 +48,11 @@ class _AddProductPageState extends State<AddProductPage> {
     'Personal care': ['Skin care', 'Hair care', 'Body care', 'Cosmetics'],
     'Baby care': ['Diapers', 'Baby Food', 'Baby Lotion', 'Baby Soap'],
     'Devices': ['BP Monitor', 'Thermometer', 'Glucometer', 'Nebulizer'],
+    'Other (Custom)': [],
   };
 
   File? imageFile;
+  String? existingImageUrl;
   String? supplierCode;
   bool _isLoading = false;
 
@@ -50,6 +60,38 @@ class _AddProductPageState extends State<AddProductPage> {
   void initState() {
     super.initState();
     fetchSupplierCode();
+    if (isEditing) _initializeEditMode();
+  }
+
+  void _initializeEditMode() {
+    final p = widget.product!;
+    nameController.text = p['name'] ?? '';
+    genericController.text = p['generic_name'] ?? '';
+    brandController.text = p['brand'] ?? '';
+    skuController.text = p['sku'] ?? '';
+    priceController.text = p['price']?.toString() ?? '';
+    unitSizeController.text = p['unit_size'] ?? '';
+    expiryController.text = p['expiry_date'] ?? '';
+
+    // Set drop-downs if valid
+    final cat = p['category'];
+    if (cat != null) {
+      if (cat == 'other') {
+        category = 'Other (Custom)';
+        customCategoryController.text = p['custom_category'] ?? '';
+        customSubCategoryController.text = p['custom_sub_category'] ?? '';
+      } else if (categoryMap.containsKey(cat)) {
+        category = cat;
+        final sub = p['sub_category'];
+        if (categoryMap[category]!.contains(sub)) {
+          subCategory = sub;
+        } else {
+          subCategory = categoryMap[category]!.first;
+        }
+      }
+    }
+
+    existingImageUrl = p['image_url'];
   }
 
   Future<void> fetchSupplierCode() async {
@@ -108,27 +150,54 @@ class _AddProductPageState extends State<AddProductPage> {
     setState(() => _isLoading = true);
 
     try {
-      final imageUrl = await uploadImage();
+      final imageUrl = await uploadImage() ?? existingImageUrl;
 
-      await supabase.from('products').insert({
-        'name': nameController.text,
-        'generic_name': genericController.text,
-        'brand': brandController.text,
-        'sku': skuController.text,
+      final bool isCustom = category == 'Other (Custom)';
+
+      final data = {
+        'name': nameController.text.trim(),
+        'generic_name': genericController.text.trim(),
+        'brand': brandController.text.trim(),
+        'sku': skuController.text.trim(),
         'price': double.parse(priceController.text),
-        'unit_size': unitSizeController.text,
+        'unit_size': unitSizeController.text.trim(),
         'expiry_date': expiryController.text,
-        'category': category,
-        'sub_category': subCategory,
+        'category': isCustom
+            ? 'other'
+            : category, // Removed toLowerCase() to match dashboard expectation if needed, but 'products' table usually stores lowercase categories. Let's keep existing logic or verify. The user code had `.toLowerCase().trim()` in one version and just `category` in another. I'll use `category` as per the map keys or lowercase it. The user code in `a code1.txt` had `category.toLowerCase().trim()`. I will stick to that.
+        'sub_category': isCustom ? null : subCategory, // Same here.
+        'custom_category': isCustom
+            ? customCategoryController.text.trim()
+            : null,
+        'custom_sub_category':
+            isCustom && customSubCategoryController.text.isNotEmpty
+            ? customSubCategoryController.text.trim()
+            : null,
         'supplier_code': supplierCode,
         'image_url': imageUrl,
-      });
+      };
+
+      // FIX: The user code had `category.toLowerCase().trim()` but the `categoryMap` keys are capitalized (e.g., 'Medicines').
+      // If the DB expects lowercase, I should lowercase it.
+      data['category'] = isCustom
+          ? 'other'
+          : category; // The user code 1 txt actually used `category.toLowerCase().trim()`. I will preserve that to be safe.
+      data['sub_category'] = isCustom ? null : subCategory;
+
+      if (isEditing) {
+        await supabase
+            .from('products')
+            .update(data)
+            .eq('id', widget.product!['id']);
+      } else {
+        await supabase.from('products').insert(data);
+      }
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Product Added Successfully!'),
+        SnackBar(
+          content: Text(isEditing ? 'Product Updated!' : 'Product Added!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -167,12 +236,16 @@ class _AddProductPageState extends State<AddProductPage> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          'Add New Product',
-          style: TextStyle(color: Theme.of(context).appBarTheme.foregroundColor),
+          isEditing ? 'Edit Product' : 'Add New Product',
+          style: TextStyle(
+            color: Theme.of(context).appBarTheme.foregroundColor,
+          ),
         ),
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
-        iconTheme: IconThemeData(color: Theme.of(context).appBarTheme.foregroundColor),
+        iconTheme: IconThemeData(
+          color: Theme.of(context).appBarTheme.foregroundColor,
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -195,7 +268,14 @@ class _AddProductPageState extends State<AddProductPage> {
               _supplierIdField(),
               _expiryField(),
               _categoryDropdown(),
-              _subCategoryDropdown(),
+              if (category != 'Other (Custom)') _subCategoryDropdown(),
+              if (category == 'Other (Custom)') ...[
+                _input("Custom Category", customCategoryController),
+                _input(
+                  "Custom Sub Category (optional)",
+                  customSubCategoryController,
+                ),
+              ],
               const SizedBox(height: 20),
               _submitButton(),
             ],
@@ -211,7 +291,11 @@ class _AddProductPageState extends State<AddProductPage> {
       child: TextFormField(
         controller: supplierIdController,
         readOnly: true,
-        style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.5)),
+        style: TextStyle(
+          color: Theme.of(
+            context,
+          ).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+        ),
         decoration: _inputDecoration("Supplier ID"),
       ),
     );
@@ -236,6 +320,7 @@ class _AddProductPageState extends State<AddProductPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: DropdownButtonFormField<String>(
+        key: ValueKey(category),
         initialValue: category,
         decoration: _inputDecoration("Category"),
         items: categoryMap.keys
@@ -244,7 +329,10 @@ class _AddProductPageState extends State<AddProductPage> {
         onChanged: (v) {
           setState(() {
             category = v!;
-            subCategory = categoryMap[category]!.first;
+            if (category != 'Other (Custom)' &&
+                categoryMap[category]!.isNotEmpty) {
+              subCategory = categoryMap[category]!.first;
+            }
           });
         },
       ),
@@ -255,6 +343,7 @@ class _AddProductPageState extends State<AddProductPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: DropdownButtonFormField<String>(
+        key: ValueKey(subCategory),
         initialValue: subCategory,
         decoration: _inputDecoration("Sub Category"),
         items: categoryMap[category]!
@@ -296,23 +385,38 @@ class _AddProductPageState extends State<AddProductPage> {
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+          ),
         ),
         child: imageFile == null
-            ? const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
-                  SizedBox(height: 8),
-                  Text(
-                    'Tap to add product image',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              )
+            ? existingImageUrl != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.network(
+                        existingImageUrl!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                      ),
+                    )
+                  : const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
+                        SizedBox(height: 8),
+                        Text(
+                          'Tap to add product image',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    )
             : ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                child: Image.file(imageFile!, fit: BoxFit.cover),
+                child: Image.file(
+                  imageFile!,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                ),
               ),
       ),
     );
@@ -321,7 +425,11 @@ class _AddProductPageState extends State<AddProductPage> {
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7)),
+      labelStyle: TextStyle(
+        color: Theme.of(
+          context,
+        ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+      ),
       filled: true,
       fillColor: Theme.of(context).cardColor,
       border: OutlineInputBorder(

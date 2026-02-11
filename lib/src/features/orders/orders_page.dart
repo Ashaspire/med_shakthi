@@ -61,9 +61,11 @@ class _OrdersPageState extends State<OrdersPage> {
         _orders = list;
       });
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("❌ Failed to fetch orders: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("❌ Failed to fetch orders: $e")));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -215,7 +217,9 @@ class _OrdersPageState extends State<OrdersPage> {
               Text(
                 brand,
                 style: TextStyle(
-                  color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6), 
+                  color: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                   fontSize: 12,
                 ),
               ),
@@ -226,7 +230,11 @@ class _OrdersPageState extends State<OrdersPage> {
             Text("₹$totalAmount • Qty: $qty"),
             Text(
               "Ordered on: $date",
-              style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.5)),
+              style: TextStyle(
+                color: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+              ),
             ),
 
             const Divider(height: 20),
@@ -282,7 +290,7 @@ class _OrdersPageState extends State<OrdersPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(

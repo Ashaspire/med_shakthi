@@ -46,6 +46,72 @@ class AppBootstrap extends StatelessWidget {
       providers: [
         legacy.ChangeNotifierProvider(create: (_) => CartData()),
         legacy.ChangeNotifierProvider(create: (_) => AddressStore()),
+    // 1. Show Loading while checking role
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF4C8077)),
+        ),
+      );
+    }
+
+    final user = Supabase.instance.client.auth.currentUser;
+
+    // 2. Not Logged In -> Go to Login
+    if (user == null) {
+      return const LoginPage();
+    }
+
+    // 3. Logged In -> Check Role
+    if (_isSupplier) {
+      return const SupplierDashboard();
+    } else {
+      return const PharmacyHomeScreen();
+    }
+  }
+}
+*/
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+// Providers
+import 'package:med_shakthi/src/features/cart/data/cart_data.dart';
+import 'package:med_shakthi/src/features/checkout/presentation/screens/address_store.dart';
+import 'package:med_shakthi/src/features/wishlist/data/wishlist_service.dart';
+import 'package:med_shakthi/src/core/theme/theme_provider.dart';
+import 'package:med_shakthi/src/core/theme/app_theme.dart';
+
+// Auth & Dashboards
+import 'package:med_shakthi/src/features/auth/presentation/screens/login_page.dart';
+import 'package:med_shakthi/src/features/dashboard/pharmacy_home_screen.dart';
+import 'package:med_shakthi/src/features/dashboard/supplier_dashboard.dart';
+
+// 🔐 Reset Password Page
+import 'package:med_shakthi/src/features/auth/presentation/screens/reset_password_page.dart';
+
+/// 🔑 GLOBAL NAVIGATOR KEY (IMPORTANT)
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load(fileName: ".env");
+
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL'] ?? '',
+    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
+  );
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CartData()),
+        ChangeNotifierProvider(create: (_) => AddressStore()),
+        ChangeNotifierProvider(create: (_) => WishlistService()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: const MyApp(),
     );
@@ -73,6 +139,83 @@ class MyApp extends StatelessWidget {
 /// ===============================================================
 /// AUTH GATE
 /// ===============================================================
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          navigatorKey: navigatorKey,
+          debugShowCheckedModeBanner: false,
+          title: 'Med Shakthi',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeProvider.isDarkMode
+              ? ThemeMode.dark
+              : ThemeMode.light,
+          home: const RootRouter(),
+        );
+      },
+    );
+  }
+}
+
+class RootRouter extends StatefulWidget {
+  const RootRouter({super.key});
+
+  @override
+  State<RootRouter> createState() => _RootRouterState();
+}
+
+class _RootRouterState extends State<RootRouter> {
+  Session? _session;
+  bool _isRecoveringPassword = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _session = Supabase.instance.client.auth.currentSession;
+
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
+      final session = data.session;
+
+      if (!mounted) return;
+
+      if (event == AuthChangeEvent.passwordRecovery) {
+        setState(() {
+          _isRecoveringPassword = true;
+        });
+
+        navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const ResetPasswordPage()),
+          (_) => false,
+        );
+        return;
+      }
+
+      setState(() {
+        _session = session;
+        _isRecoveringPassword = false;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 🔐 PASSWORD RESET FLOW (HIGHEST PRIORITY)
+    if (_isRecoveringPassword) {
+      return const ResetPasswordPage();
+    }
+
+    // 🔐 NORMAL AUTH FLOW
+    if (_session == null) {
+      return const LoginPage();
+    }
+
+    return const AuthGate();
+  }
+}
+
+/// 🔐 AUTH GATE (ROLE BASED NAVIGATION)
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
