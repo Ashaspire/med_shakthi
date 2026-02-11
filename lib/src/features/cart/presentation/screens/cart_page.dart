@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../checkout/presentation/screens/address_select_screen.dart';
 import '../../data/cart_data.dart';
 import '../../data/cart_item.dart';
+import 'package:med_shakthi/src/core/utils/smart_product_image.dart';
 
 class CartPage extends StatelessWidget {
   const CartPage({super.key});
@@ -394,18 +395,14 @@ class _CartItemCard extends StatelessWidget {
                       : Colors.grey[50],
                   borderRadius: BorderRadius.circular(15),
                 ),
-                child: item.imagePath?.startsWith('http') ?? false
-                    ? Image.network(item.imagePath!, fit: BoxFit.contain)
-                    : Image.asset(
-                        item.imagePath ?? '',
-                        fit: BoxFit.contain,
-                        errorBuilder: (c, o, s) => Icon(
-                          Icons.medication,
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.grey[700]
-                              : Colors.grey[300],
-                        ),
-                      ),
+                child: SmartProductImage(
+                  imageUrl: item.imagePath,
+                  category:
+                      item.brand ??
+                      item.title ??
+                      item.name, // Use brand (category) or name for fallback
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
             const SizedBox(width: 16),

@@ -9,7 +9,7 @@ class SupabaseService {
     required File file,
     required String fileName,
   }) async {
-    final String path = await client.storage
+    await client.storage
         .from(bucket)
         .upload(
           fileName,

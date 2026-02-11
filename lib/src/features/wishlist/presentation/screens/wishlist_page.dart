@@ -5,6 +5,7 @@ import '../../../cart/data/cart_data.dart';
 import '../../../cart/data/cart_item.dart';
 import '../../../products/presentation/screens/product_page.dart';
 import '../../../products/data/models/product_model.dart';
+import 'package:med_shakthi/src/core/utils/smart_product_image.dart';
 
 class WishlistPage extends StatelessWidget {
   const WishlistPage({super.key});
@@ -170,11 +171,11 @@ class _WishlistCard extends StatelessWidget {
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.grey[800]
                           : Colors.grey[50],
-                      child: Image.network(
-                        item.image,
+                      child: SmartProductImage(
+                        imageUrl: item.image,
+                        category: item
+                            .name, // Using name as fallback since category is missing
                         fit: BoxFit.contain,
-                        errorBuilder: (c, e, s) =>
-                            const Icon(Icons.broken_image, color: Colors.grey),
                       ),
                     ),
                   ),

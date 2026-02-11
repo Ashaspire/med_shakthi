@@ -36,7 +36,7 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
     final response = await supabase
         .from('products')
         .select()
-        .eq('category', widget.categoryName)
+        .ilike('category', widget.categoryName)
         .order('created_at', ascending: false);
 
     products = List<Map<String, dynamic>>.from(response);

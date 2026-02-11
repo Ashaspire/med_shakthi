@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../orders/orders_page.dart';
 import '../profile/presentation/screens/chat_list_screen.dart';
 import '../profile/presentation/screens/supplier_category_page.dart';
@@ -7,6 +8,8 @@ import '../profile/presentation/screens/supplier_payout_page.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/theme_provider.dart';
 import '../supplier/inventory/ui/add_product_page.dart';
+import '../supplier/inventory/ui/my_products_page.dart';
+import '../supplier/sales/sales_analytics_page.dart';
 
 class SupplierDashboard extends StatefulWidget {
   const SupplierDashboard({super.key});
@@ -26,7 +29,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
     const SupplierCategoryPage(),
     const SizedBox(), // Placeholder for center "Add" button which navigates instead of switching tabs
     const OrdersPage(),
-    const SupplierProfileScreen(),
+    const MyProductsPage(),
   ];
 
   @override
@@ -67,31 +70,31 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           },
           items: [
             const BottomNavigationBarItem(
-              icon: Icon(Icons.home_filled),
+              icon: Icon(Icons.home_filled, size: 26),
               label: "Home",
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view),
+              icon: Icon(Icons.grid_view, size: 26),
               label: "Category",
             ),
             BottomNavigationBarItem(
               icon: Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 decoration: const BoxDecoration(
                   color: Color(0xFF4CA6A8),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.add, color: Colors.white),
+                child: const Icon(Icons.add, color: Colors.white, size: 24),
               ),
               label: "",
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long),
+              icon: Icon(Icons.receipt_long, size: 26),
               label: "Order",
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              label: "Profile",
+              icon: Icon(Icons.inventory_2_outlined, size: 26),
+              label: "My Products",
             ),
           ],
         ),
@@ -115,14 +118,14 @@ class SupplierDashboardHome extends StatelessWidget {
           const SizedBox(height: 20),
           _buildPromoBanner(context),
           const SizedBox(height: 30),
-          _buildSectionHeader("Categories"),
+          _buildSectionHeader("Categories", context: context),
           const SizedBox(height: 15),
           _buildCategoryList(context),
           const SizedBox(height: 30),
-          _buildSectionHeader("Performance Stats"),
+          _buildSectionHeader("Performance Stats", context: context),
           const SizedBox(height: 15),
           _buildPerformanceGrid(context),
-          const SizedBox(height: 100), // ✅ CHANGED: Space for FAB
+          const SizedBox(height: 100), // Space for FAB
         ],
       ),
     );
@@ -132,32 +135,80 @@ class SupplierDashboardHome extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Icon(
-            Icons.grid_view_rounded,
-            color: Theme.of(context).iconTheme.color,
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SupplierProfileScreen(),
+              ),
+            );
+          },
+          child: Container(
+            height: 50,
+            width: 50,
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
+                  spreadRadius: 1,
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.person_outline,
+              color: Theme.of(context).iconTheme.color,
+              size: 26,
+            ),
           ),
         ),
         const SizedBox(width: 15),
 
         Expanded(
-          child: Container(
-            height: 50,
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: const TextField(
-              decoration: InputDecoration(
-                prefixIcon: Icon(Icons.search, color: Colors.grey),
-                hintText: "Search analytics...",
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 15),
+          child: GestureDetector(
+            onTap: () {
+              // Navigate to search page or show search functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Search functionality coming soon'),
+                ),
+              );
+            },
+            child: Container(
+              height: 50,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.search,
+                    color: Theme.of(
+                      context,
+                    ).iconTheme.color?.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Search products, orders...",
+                      style: TextStyle(
+                        color: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -230,16 +281,18 @@ class SupplierDashboardHome extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, {BuildContext? context}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF2D2D2D),
+            color: context != null
+                ? Theme.of(context).textTheme.bodyLarge?.color
+                : const Color(0xFF2D2D2D),
           ),
         ),
         const Text(
@@ -290,8 +343,9 @@ class SupplierDashboardHome extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const SupplierPayoutPage()),
                 );
               } else if (label == "Sales") {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Sales page coming soon")),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SalesAnalyticsPage()),
                 );
               }
             },
@@ -312,9 +366,11 @@ class SupplierDashboardHome extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Colors.black54,
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -361,7 +417,9 @@ class SupplierDashboardHome extends StatelessWidget {
             height: 55,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: const Color(0xFFF7F8FA),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : const Color(0xFFF7F8FA),
               borderRadius: BorderRadius.circular(15),
             ),
             child: const Icon(Icons.bar_chart, color: Colors.grey, size: 40),
@@ -370,7 +428,11 @@ class SupplierDashboardHome extends StatelessWidget {
           Text(sub, style: const TextStyle(color: Colors.grey, fontSize: 12)),
           Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
           ),
           const Spacer(),
           Row(

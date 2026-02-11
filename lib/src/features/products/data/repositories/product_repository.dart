@@ -15,7 +15,7 @@ class ProductRepository {
 
       // --- DEBUG PRINT ---
       // This will show up in your "Run" tab. Check if it's empty [].
-      // debugPrint('📦 Supabase Raw Data: $response');
+      debugPrint('📦 Supabase Raw Data: $response');
 
       // Convert the List<dynamic> from Supabase into List<Product>
       // We use the helper method from your product model (ensure it exists)

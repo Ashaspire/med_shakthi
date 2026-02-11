@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:med_shakthi/src/features/category/category_ui.dart';
 import 'package:med_shakthi/src/features/category/category_products_page.dart';
 import 'package:med_shakthi/src/features/category/devices_page.dart';
+import 'package:med_shakthi/src/features/health/health_page.dart';
+import 'package:med_shakthi/src/features/vitamins/vitamins_page.dart';
 import 'package:med_shakthi/src/features/products/data/repositories/product_repository.dart';
 import 'package:med_shakthi/src/features/wishlist/presentation/screens/wishlist_page.dart';
 import 'package:med_shakthi/src/features/wishlist/data/wishlist_service.dart';
-import 'package:med_shakthi/src/features/wishlist/data/models/wishlist_item_model.dart';
+
 import 'package:med_shakthi/src/features/cart/presentation/screens/cart_page.dart';
 import 'package:med_shakthi/src/features/orders/orders_page.dart';
 import 'package:med_shakthi/src/features/products/presentation/screens/product_page.dart';
 import 'package:provider/provider.dart';
-import '../orders/chat_screen.dart';
+
 import '../profile/presentation/screens/ai_assistant_page.dart';
 import '../profile/presentation/screens/chat_details_screen.dart';
 import '../profile/presentation/screens/profile_screen.dart';
@@ -19,6 +21,7 @@ import 'package:med_shakthi/src/features/cart/data/cart_item.dart';
 import 'package:med_shakthi/src/features/products/data/models/product_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:med_shakthi/src/features/search/search_page.dart';
+import 'package:med_shakthi/src/core/utils/smart_product_image.dart';
 
 /// This screen implements the "Med Shakti home page" for Retailers
 class PharmacyHomeScreen extends StatefulWidget {
@@ -289,7 +292,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
 
   /// Builds the horizontal list of circular categories
   Widget _buildCategoriesList() {
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
     return SizedBox(
       height: 110, // Increased from 100
       child: ListView(
@@ -327,6 +330,16 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const DevicesPage()),
+          );
+        } else if (label == "Health") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const HealthPage()),
+          );
+        } else if (label == "Vitamins") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const VitaminsPage()),
           );
         }
         // You can add navigation for other categories here as well
@@ -393,15 +406,11 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
           children: [
             Expanded(
               child: Center(
-                child: Image.network(
-                  product.image,
+                child: SmartProductImage(
+                  imageUrl: product.image,
+                  category: product
+                      .category, // Pass category for intelligent fallback
                   fit: BoxFit.contain,
-                  errorBuilder: (c, e, s) => Container(
-                    color: theme.brightness == Brightness.dark
-                        ? Colors.grey[800]
-                        : Colors.grey[100],
-                    child: const Center(child: Icon(Icons.image_not_supported)),
-                  ),
                 ),
               ),
             ),
@@ -493,7 +502,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
 
   /// Fetches Real Products from Supabase
   Widget _buildRealBestsellersList() {
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
     return SizedBox(
       height: 280, // Increased from 260 for safety
       child: FutureBuilder<List<Product>>(
@@ -524,276 +533,6 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
   }
 
   final SupabaseClient supabase = Supabase.instance.client;
-
-  Future<List<Product>> _fetchProducts() async {
-    final res = await supabase
-        .from('products')
-        .select()
-        .order('created_at', ascending: false);
-
-    return (res as List)
-        .map((e) => Product.fromMap(e as Map<String, dynamic>))
-        .toList();
-  }
-
-  /// Builds the horizontal list of product cards
-  Widget _buildBestsellersList() {
-    return FutureBuilder<List<Product>>(
-      future: _fetchProducts(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-            height: 280, // Increased from 260
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return SizedBox(
-            height: 280, // Increased from 260
-            child: Center(child: Text("Error: ${snapshot.error}")),
-          );
-        }
-
-        final products = snapshot.data ?? [];
-
-        if (products.isEmpty) {
-          return const SizedBox(
-            height: 280, // Increased from 260
-            child: Center(child: Text("No products available")),
-          );
-        }
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.7,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: products.length > 10 ? 10 : products.length,
-            itemBuilder: (context, index) {
-              final product = products[index];
-              final theme = Theme.of(context);
-
-              return GestureDetector(
-                //  Product details page open (same as before)
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ProductPage(product: product),
-                  ),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.shadowColor.withValues(alpha: 0.08),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      //  Image with heart icon
-                      Expanded(
-                        child: Stack(
-                          children: [
-                            Center(
-                              child: Image.network(
-                                product.image,
-                                fit: BoxFit.contain,
-                                errorBuilder: (c, e, s) => Container(
-                                  color: Colors.grey[100],
-                                  child: const Center(
-                                    child: Icon(Icons.image_not_supported),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Heart icon for wishlist
-                            Positioned(
-                              top: 0,
-                              right: 0,
-                              child: Consumer<WishlistService>(
-                                builder: (context, wishlistService, child) {
-                                  final isInWishlist = wishlistService
-                                      .isInWishlist(product.id);
-                                  return GestureDetector(
-                                    onTap: () {
-                                      if (isInWishlist) {
-                                        wishlistService.removeFromWishlist(
-                                          product.id,
-                                        );
-                                      } else {
-                                        // Convert Product to WishlistItem
-                                        final wishlistItem = WishlistItem(
-                                          id: product.id,
-                                          name: product.name,
-                                          price: product.price,
-                                          image: product.image,
-                                        );
-                                        wishlistService.addToWishlist(
-                                          wishlistItem,
-                                        );
-                                      }
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.all(6),
-                                      child: Icon(
-                                        isInWishlist
-                                            ? Icons.favorite
-                                            : Icons.favorite_border,
-                                        color: isInWishlist
-                                            ? Colors.red
-                                            : Colors.grey[700],
-                                        size: 22,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      //  Title
-                      Text(
-                        product.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-
-                      const SizedBox(height: 4),
-
-                      //  Category
-                      Text(
-                        product.category,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      //  Rating Row (dynamic)
-                      Row(
-                        children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 14),
-                          const SizedBox(width: 4),
-                          Text(
-                            product.rating.toStringAsFixed(1),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.color
-                                  ?.withValues(alpha: 0.6),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      //  Price and Add Button
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            // Prevent price overflow in list Bestseller
-                            child: Text(
-                              "₹${product.price.toStringAsFixed(2)}",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Theme.of(
-                                  context,
-                                ).textTheme.bodyLarge?.color,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-
-                          //  Add Button (+) -> cart add + open CartPage
-                          InkWell(
-                            onTap: () {
-                              //  stop GestureDetector tap (details page)
-                              // otherwise both tap trigger ho jayega
-                              // so we do: onTapDown trick not needed, just use InkWell here
-
-                              final cartItem = CartItem(
-                                id: product.id,
-                                //  UUID from Supabase
-                                name: product.name,
-                                title: product.name,
-                                brand: product.category,
-                                size: "Standard",
-                                price: product.price,
-                                imagePath: product.image,
-                                imageUrl: product.image,
-                              );
-
-                              context.read<CartData>().addItem(cartItem);
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const CartPage(),
-                                ),
-                              );
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Item added to cart "),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              height: 32,
-                              width: 32,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF5A9CA0),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.add,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
 
   /// Custom Bottom Navigation Bar
   Widget _buildBottomNavigationBar() {
