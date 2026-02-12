@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:med_shakthi/src/features/dashboard/pharmacy_home_screen.dart';
-import 'package:med_shakthi/src/features/auth/presentation/screens/supplier_signup_page.dart';
-import 'package:med_shakthi/src/features/auth/presentation/screens/signup_page.dart';
 import 'package:med_shakthi/src/features/dashboard/supplier_dashboard.dart';
+import 'package:med_shakthi/src/core/widgets/app_logo.dart';
+import 'package:med_shakthi/src/features/auth/presentation/screens/role_selection_page.dart';
+
+import 'forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,7 +17,6 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Supabase Client
   final SupabaseClient supabase = Supabase.instance.client;
 
   final TextEditingController _emailController = TextEditingController();
@@ -34,19 +35,15 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _onLoginPressed() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // 🔐 Supabase Login Logic
       final AuthResponse res = await supabase.auth.signInWithPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
       if (res.user != null) {
-        // 🔍 Check if the logged-in user is a supplier
         final supplierData = await supabase
             .from('suppliers')
             .select()
@@ -62,20 +59,17 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
 
-        // 🔀 Navigation Logic
         if (supplierData != null) {
-          // Navigate to Supplier Dashboard
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
-              builder: (BuildContext context) => const SupplierDashboard(),
+              builder: (_) => const SupplierDashboard(),
             ),
             (route) => false,
           );
         } else {
-          // Navigate to User/Pharmacy Home
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
-              builder: (BuildContext context) => const PharmacyHomeScreen(),
+              builder: (_) => const PharmacyHomeScreen(),
             ),
             (route) => false,
           );
@@ -102,11 +96,13 @@ class _LoginPageState extends State<LoginPage> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFEAF4F2), Color(0xFFF6FBFA)],
+            colors: Theme.of(context).brightness == Brightness.dark
+                ? [const Color(0xFF1A1A1A), const Color(0xFF121212)]
+                : [const Color(0xFFEAF4F2), const Color(0xFFF6FBFA)],
           ),
         ),
         child: SafeArea(
@@ -118,47 +114,20 @@ class _LoginPageState extends State<LoginPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 24),
-                  const Center(
+                  Center(
                     child: Text(
                       'Login',
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w600,
+                        color: Theme.of(context).textTheme.titleLarge?.color,
                       ),
                     ),
                   ),
                   const SizedBox(height: 30),
-                  Center(
-                    child: Container(
-                      height: 90,
-                      width: 90,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(22),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.12),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Image.asset(
-                          'assets/images/logo.png',
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(
-                                Icons.local_pharmacy,
-                                size: 40,
-                                color: Color(0xFF6AA39B),
-                              ),
-                        ),
-                      ),
-                    ),
-                  ),
+                  const Center(child: AppLogo(size: 100)),
                   const SizedBox(height: 40),
+
                   _label('Email'),
                   _textField(
                     controller: _emailController,
@@ -168,7 +137,9 @@ class _LoginPageState extends State<LoginPage> {
                         ? null
                         : 'Enter valid email',
                   ),
+
                   const SizedBox(height: 20),
+
                   _label('Password'),
                   _textField(
                     controller: _passwordController,
@@ -190,18 +161,35 @@ class _LoginPageState extends State<LoginPage> {
                         ? null
                         : 'Minimum 6 characters',
                   ),
+
                   const SizedBox(height: 10),
+
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {},
-                      child: const Text(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ForgotPasswordPage(),
+                          ),
+                        );
+                      },
+                      child: Text(
                         'Forgot Password?',
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(
+                          color: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.color
+                              ?.withValues(alpha: 0.6),
+                        ),
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 16),
+
                   SizedBox(
                     width: double.infinity,
                     height: 52,
@@ -215,13 +203,9 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       child: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
+                          ? const CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
                             )
                           : const Text(
                               'Login',
@@ -232,47 +216,35 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                     ),
                   ),
-                  const SizedBox(height: 30),
-                  const Center(
-                    child: Text(
-                      'Social Login',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _socialIcon(Icons.facebook, Colors.blue),
-                      const SizedBox(width: 20),
-                      _socialIcon(Icons.g_mobiledata, Colors.green),
-                      const SizedBox(width: 20),
-                      _socialIcon(Icons.apple, Colors.black),
-                    ],
-                  ),
+
                   const SizedBox(height: 40),
+
                   Center(
                     child: GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const SignupPage(),
+                            builder: (_) => const RoleSelectionPage(),
                           ),
                         );
                       },
                       child: RichText(
                         text: TextSpan(
-                          style: const TextStyle(
-                            color: Colors.grey,
+                          style: TextStyle(
+                            color: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.color
+                                ?.withValues(alpha: 0.6),
                             fontSize: 14,
                           ),
-                          children: [
-                            const TextSpan(text: "Don't have an account? "),
+                          children: const [
+                            TextSpan(text: "Don't have an account? "),
                             TextSpan(
                               text: 'Sign up',
                               style: TextStyle(
-                                color: const Color(0xFF6AA39B),
+                                color: Color(0xFF6AA39B),
                                 fontWeight: FontWeight.bold,
                                 decoration: TextDecoration.underline,
                               ),
@@ -282,38 +254,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SupplierSignupPage(),
-                          ),
-                        );
-                      },
-                      child: RichText(
-                        text: TextSpan(
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                          ),
-                          children: [
-                            const TextSpan(text: 'Are you a distributor? '),
-                            TextSpan(
-                              text: 'Register as Supplier',
-                              style: TextStyle(
-                                color: const Color(0xFF6AA39B),
-                                fontWeight: FontWeight.bold,
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+
                   const SizedBox(height: 20),
                 ],
               ),
@@ -327,7 +268,13 @@ class _LoginPageState extends State<LoginPage> {
   Widget _label(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Text(text, style: const TextStyle(fontWeight: FontWeight.w500)),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontWeight: FontWeight.w500,
+          color: Theme.of(context).textTheme.bodyLarge?.color,
+        ),
+      ),
     );
   }
 
@@ -346,29 +293,14 @@ class _LoginPageState extends State<LoginPage> {
       validator: validator,
       decoration: InputDecoration(
         hintText: hint,
-        suffixIcon: suffixIcon,
         filled: true,
-        fillColor: Colors.white,
+        fillColor: Theme.of(context).cardColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide.none,
         ),
+        suffixIcon: suffixIcon,
       ),
-    );
-  }
-
-  Widget _socialIcon(IconData icon, Color color) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8),
-        ],
-      ),
-      child: Icon(icon, color: color, size: 30),
     );
   }
 }

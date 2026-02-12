@@ -5,6 +5,7 @@ import '../../../cart/data/cart_data.dart';
 import '../../../cart/data/cart_item.dart';
 import '../../../products/presentation/screens/product_page.dart';
 import '../../../products/data/models/product_model.dart';
+import 'package:med_shakthi/src/core/utils/smart_product_image.dart';
 
 class WishlistPage extends StatelessWidget {
   const WishlistPage({super.key});
@@ -12,7 +13,7 @@ class WishlistPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC), // Modern light grey background
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Consumer<WishlistService>(
         builder: (context, wishlistService, child) {
           final items = wishlistService.wishlist;
@@ -24,23 +25,23 @@ class WishlistPage extends StatelessWidget {
               SliverAppBar(
                 floating: true,
                 pinned: true,
-                backgroundColor: Colors.white,
+                backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
                 elevation: 0,
                 centerTitle: true,
-                title: const Text(
+                title: Text(
                   "My Wishlist",
                   style: TextStyle(
-                    color: Colors.black87,
+                    color: Theme.of(context).appBarTheme.foregroundColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
                   ),
                 ),
                 leading: Navigator.canPop(context)
                     ? IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.arrow_back_ios_new,
                           size: 20,
-                          color: Colors.black87,
+                          color: Theme.of(context).iconTheme.color,
                         ),
                         onPressed: () => Navigator.pop(context),
                       )
@@ -56,21 +57,30 @@ class WishlistPage extends StatelessWidget {
                       Icon(
                         Icons.favorite_border,
                         size: 80,
-                        color: Colors.grey[300],
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[700]
+                            : Colors.grey[300],
                       ),
                       const SizedBox(height: 16),
                       Text(
                         "Your wishlist is empty",
                         style: TextStyle(
                           fontSize: 18,
-                          color: Colors.grey[500],
+                          color: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         "Save items you want to buy later!",
-                        style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+                        ),
                       ),
                     ],
                   ),
@@ -115,7 +125,7 @@ class _WishlistCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -158,12 +168,14 @@ class _WishlistCard extends StatelessWidget {
                     child: Container(
                       height: 80,
                       width: 80,
-                      color: Colors.grey[50],
-                      child: Image.network(
-                        item.image,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[800]
+                          : Colors.grey[50],
+                      child: SmartProductImage(
+                        imageUrl: item.image,
+                        category: item
+                            .name, // Using name as fallback since category is missing
                         fit: BoxFit.contain,
-                        errorBuilder: (c, e, s) =>
-                            const Icon(Icons.broken_image, color: Colors.grey),
                       ),
                     ),
                   ),
@@ -178,10 +190,10 @@ class _WishlistCard extends StatelessWidget {
                           item.name,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
                           ),
                         ),
                         const SizedBox(height: 4),

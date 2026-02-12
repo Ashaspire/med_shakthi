@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -25,36 +26,36 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   Widget paymentTile(String title, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: EdgeInsets.zero,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: selectedMethod == title ? Colors.teal : Colors.transparent,
           width: 1.5,
         ),
       ),
-      child: Row(
-        children: [
-          Icon(icon, size: 28),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-          ),
-          Radio<String>(
-            value: title,
-            groupValue: selectedMethod,
-            onChanged: (value) {
-              setState(() {
-                selectedMethod = value!;
-              });
-            },
-            activeColor: Colors.teal,
-          ),
-        ],
+      child: RadioListTile<String>(
+        value: title,
+        groupValue: selectedMethod,
+        onChanged: (value) {
+          setState(() {
+            selectedMethod = value!;
+          });
+        },
+        activeColor: Colors.teal,
+        secondary: Icon(
+          icon,
+          size: 28,
+          color: selectedMethod == title ? Colors.teal : null,
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+        controlAffinity: ListTileControlAffinity.trailing,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }
@@ -164,15 +165,19 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     final total = subTotal + shipping;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7F9),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
+        iconTheme: IconThemeData(
+          color: Theme.of(context).appBarTheme.foregroundColor,
+        ),
+        title: Text(
           "Payment Method",
-          style: TextStyle(color: Colors.black),
+          style: TextStyle(
+            color: Theme.of(context).appBarTheme.foregroundColor,
+          ),
         ),
       ),
       body: SafeArea(
@@ -212,7 +217,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                       decoration: InputDecoration(
                         hintText: "Enter your code here",
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: Theme.of(context).cardColor,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,

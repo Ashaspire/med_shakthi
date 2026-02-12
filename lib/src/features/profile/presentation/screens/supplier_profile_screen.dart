@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:med_shakthi/src/features/auth/presentation/screens/login_page.dart';
+import '../../../../features/profile/presentation/screens/privacy_policy_screen.dart';
 
 class SupplierProfileScreen extends StatefulWidget {
   const SupplierProfileScreen({super.key});
@@ -152,13 +153,18 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("My Profile", style: TextStyle(color: Colors.black)),
+        title: Text(
+          "My Profile",
+          style: TextStyle(
+            color: Theme.of(context).appBarTheme.foregroundColor,
+          ),
+        ),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: Theme.of(context).appBarTheme.iconTheme,
         actions: [
           IconButton(
             icon: Icon(_isEditing ? Icons.save : Icons.edit),
@@ -291,6 +297,14 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                   // 5. Account Actions
                   _buildSectionTitle("Settings"),
                   _buildMenuOption(Icons.settings, "Account Settings", () {}),
+                  _buildMenuOption(Icons.privacy_tip, "Privacy Policy", () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PrivacyPolicyScreen(),
+                      ),
+                    );
+                  }),
                   _buildMenuOption(Icons.notifications, "Notifications", () {}),
                   _buildMenuOption(Icons.help, "Help & Support", () {}),
                   _buildMenuOption(Icons.logout, "Logout", _handleLogout),
@@ -304,7 +318,7 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -337,8 +351,8 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                 right: 0,
                 child: Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -417,9 +431,11 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+        ),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -430,14 +446,18 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
               color: const Color(0xFF4C8077).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: const Color(0xFF4C8077), size: 20),
+            child: const Icon(
+              Icons.business,
+              color: Color(0xFF4C8077),
+              size: 20,
+            ),
           ),
           title: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 15,
-              color: Colors.black87,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
             ),
           ),
           childrenPadding: const EdgeInsets.symmetric(
@@ -483,10 +503,10 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                     height: 30, // constrain height for edit field in row
                     child: TextField(
                       controller: controller,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Colors.black87,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
                       ),
                       decoration: const InputDecoration(
                         isDense: true,
@@ -498,10 +518,10 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                 else
                   Text(
                     value.isNotEmpty ? value : "Not Provided",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: Colors.black87,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                     ),
                   ),
               ],
@@ -534,9 +554,11 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+        ),
       ),
       child: ListTile(
         leading: Container(
@@ -549,7 +571,11 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
         ),
         title: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+          ),
         ),
         trailing: const Icon(
           Icons.arrow_forward_ios,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'models/order_detail_model.dart';
+import 'package:med_shakthi/src/core/utils/smart_product_image.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final Map<String, dynamic> orderData;
@@ -63,22 +64,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         widget.orderData['delivery_address'] ?? "Address info not available";
     final paymentMode = widget.orderData['payment_method'] ?? "Online";
 
-    final Color themeColor = const Color(0xFF4C8077);
-    final Color backgroundColor = const Color(0xFFF5F7F9);
+    final Color themeColor = Theme.of(context).primaryColor;
+    final Color backgroundColor = Theme.of(context).scaffoldBackgroundColor;
 
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(
+            Icons.arrow_back,
+            color: Theme.of(context).appBarTheme.foregroundColor,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           'Order #$orderGroupId',
-          style: const TextStyle(
-            color: Colors.black,
+          style: TextStyle(
+            color: Theme.of(context).appBarTheme.foregroundColor,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -138,7 +142,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
@@ -193,7 +197,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -212,14 +216,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: item.imageUrl.isNotEmpty
-                ? Image.network(
-                    item.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.image_not_supported),
-                  )
-                : const Icon(Icons.medication, color: Colors.grey),
+            child: SmartProductImage(
+              imageUrl: item.imageUrl,
+              category: item.brand, // Use brand as fallback category
+              fit: BoxFit.cover,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -261,7 +262,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -345,7 +346,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(

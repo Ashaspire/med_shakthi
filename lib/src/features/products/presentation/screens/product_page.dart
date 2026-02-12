@@ -6,6 +6,7 @@ import '../../../cart/presentation/screens/cart_page.dart';
 import '../../data/models/product_model.dart';
 import 'package:med_shakthi/src/features/wishlist/data/wishlist_service.dart';
 import 'package:med_shakthi/src/features/wishlist/data/models/wishlist_item_model.dart';
+import 'package:med_shakthi/src/core/utils/smart_product_image.dart';
 
 class ProductPage extends StatelessWidget {
   final Product product;
@@ -15,7 +16,7 @@ class ProductPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FB),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -26,7 +27,7 @@ class ProductPage extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    _ProductImageCard(imageUrl: product.image),
+                    _ProductImageCard(product: product),
                     const SizedBox(height: 16),
                     _ProductInfoSection(product: product),
                     const SizedBox(height: 16),
@@ -73,7 +74,7 @@ class _TopBarState extends State<_TopBar> {
               height: 32,
               width: 32,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -113,7 +114,7 @@ class _TopBarState extends State<_TopBar> {
           ),
 
           const SizedBox(width: 12),
-          const Icon(Icons.share),
+          Icon(Icons.share, color: Theme.of(context).iconTheme.color),
         ],
       ),
     );
@@ -123,9 +124,9 @@ class _TopBarState extends State<_TopBar> {
 /* ---------------- IMAGE CARD ---------------- */
 
 class _ProductImageCard extends StatelessWidget {
-  final String imageUrl;
+  final Product product;
 
-  const _ProductImageCard({required this.imageUrl});
+  const _ProductImageCard({required this.product});
 
   @override
   Widget build(BuildContext context) {
@@ -133,15 +134,15 @@ class _ProductImageCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
       ),
-      child: Image.network(
-        imageUrl,
+      child: SmartProductImage(
+        imageUrl: product.image,
+        category: product.category, // Pass category for fallback logic
         height: 230,
         fit: BoxFit.contain,
-        errorBuilder: (_, _, _) =>
-            const Icon(Icons.image_not_supported, size: 80),
+        borderRadius: 0, // Container already has radius
       ),
     );
   }
@@ -166,7 +167,12 @@ class _ProductInfoSection extends StatelessWidget {
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
-          Text(product.category, style: const TextStyle(color: Colors.grey)),
+          Text(
+            product.category,
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodySmall?.color,
+            ),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -198,7 +204,7 @@ class _SelectPharmacyCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
@@ -230,8 +236,8 @@ class _BottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black12,
@@ -246,7 +252,7 @@ class _BottomBar extends StatelessWidget {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              print("Product ID: ${product.id}");
+              debugPrint("Product ID: ${product.id}");
 
               context.read<CartData>().addItem(
                 CartItem(

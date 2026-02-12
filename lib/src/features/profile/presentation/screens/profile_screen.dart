@@ -5,8 +5,10 @@ import 'package:med_shakthi/src/features/profile/presentation/screens/settings_p
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:med_shakthi/src/features/auth/presentation/screens/login_page.dart';
-import 'package:med_shakthi/src/features/checkout/presentation/screens/address_store.dart';
+
 import 'package:med_shakthi/src/features/checkout/presentation/screens/address_select_screen.dart';
+import 'package:med_shakthi/src/features/cart/data/cart_data.dart';
+import 'package:med_shakthi/src/features/wishlist/data/wishlist_service.dart';
 import '../../../orders/orders_page.dart';
 
 import '../../../checkout/presentation/screens/payment_methods_for_pro_page.dart';
@@ -31,21 +33,12 @@ class _AccountPageState extends State<AccountPage> {
   String _phone = "";
 
   //  Address fields
-  String _addressLine1 = "";
-  String _addressLine2 = "";
-  String _city = "";
-  String _state = "";
-  String _pincode = "";
-
-  //  Orders list
-  List<Map<String, dynamic>> _orders = [];
-  bool _ordersLoading = false;
 
   @override
   void initState() {
     super.initState();
     _fetchUserData();
-    _fetchOrders();
+    // _fetchOrders();
   }
 
   Future<void> _fetchUserData() async {
@@ -80,12 +73,6 @@ class _AccountPageState extends State<AccountPage> {
         setState(() {
           _displayName = data['name'] ?? _displayName;
           _phone = data['phone'] ?? _phone;
-
-          _addressLine1 = data['address_line1'] ?? "";
-          _addressLine2 = data['address_line2'] ?? "";
-          _city = data['city'] ?? "";
-          _state = data['state'] ?? "";
-          _pincode = data['pincode'] ?? "";
         });
       }
     } catch (_) {}
@@ -93,34 +80,13 @@ class _AccountPageState extends State<AccountPage> {
     if (mounted) setState(() => _isLoading = false);
   }
 
-  Future<void> _fetchOrders() async {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
-
-    setState(() => _ordersLoading = true);
-
-    try {
-      final data = await supabase
-          .from('orders')
-          .select()
-          .eq('user_id', user.id)
-          .order('created_at', ascending: false);
-
-      if (mounted) {
-        setState(() {
-          _orders = List<Map<String, dynamic>>.from(data);
-        });
-      }
-    } catch (e) {
-      debugPrint("Orders Error: $e");
-    } finally {
-      if (mounted) setState(() => _ordersLoading = false);
-    }
-  }
-
   Future<void> _handleLogout() async {
     setState(() => _isLoading = true);
     try {
+      // Clear local persistence before signing out
+      context.read<CartData>().clearLocalStateOnly();
+      context.read<WishlistService>().clearWishlist();
+
       await supabase.auth.signOut();
       if (!mounted) return;
 
@@ -232,17 +198,20 @@ class _AccountPageState extends State<AccountPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final addressStore = context.watch<AddressStore>();
+    // final addressStore = context.watch<AddressStore>(); // Unused
     // final selected = addressStore.selectedAddress; // Unused
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
         centerTitle: true,
-        title: const Text("Account", style: TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.black),
+        title: Text(
+          "Account",
+          style: TextStyle(color: theme.appBarTheme.foregroundColor),
+        ),
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        iconTheme: theme.appBarTheme.iconTheme,
       ),
       body: SafeArea(
         child: _isLoading
@@ -253,10 +222,10 @@ class _AccountPageState extends State<AccountPage> {
                   Container(
                     padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.cardColor,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
+                          color: theme.shadowColor.withValues(alpha: 0.03),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -293,8 +262,8 @@ class _AccountPageState extends State<AccountPage> {
                               ),
                               Container(
                                 padding: const EdgeInsets.all(3),
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
+                                decoration: BoxDecoration(
+                                  color: theme.cardColor,
                                   shape: BoxShape.circle,
                                 ),
                                 child: const CircleAvatar(
@@ -324,14 +293,18 @@ class _AccountPageState extends State<AccountPage> {
                               const SizedBox(height: 4),
                               Text(
                                 _email,
-                                style: TextStyle(color: Colors.grey[700]),
+                                style: TextStyle(
+                                  color: theme.textTheme.bodyMedium?.color
+                                      ?.withValues(alpha: 0.7),
+                                ),
                               ),
                               if (_phone.isNotEmpty) ...[
                                 const SizedBox(height: 2),
                                 Text(
                                   _phone,
                                   style: TextStyle(
-                                    color: Colors.grey[600],
+                                    color: theme.textTheme.bodySmall?.color
+                                        ?.withValues(alpha: 0.6),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -395,7 +368,6 @@ class _AccountPageState extends State<AccountPage> {
                           },
                         ),
 
-
                         const SizedBox(height: 12),
 
                         //  Settings Section
@@ -454,60 +426,6 @@ class _AccountPageState extends State<AccountPage> {
       ),
     );
   }
-
-  Widget _buildAddressBox() {
-    final bool hasAddress =
-        _addressLine1.isNotEmpty ||
-        _addressLine2.isNotEmpty ||
-        _city.isNotEmpty ||
-        _state.isNotEmpty ||
-        _pincode.isNotEmpty;
-
-    if (!hasAddress) {
-      return const Text("No address saved yet.");
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_addressLine1.isNotEmpty)
-          Text(
-            _addressLine1,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-        if (_addressLine2.isNotEmpty) Text(_addressLine2),
-        const SizedBox(height: 6),
-        Text(
-          "${_city.isNotEmpty ? _city : ""}${_city.isNotEmpty && _state.isNotEmpty ? ", " : ""}${_state.isNotEmpty ? _state : ""}",
-        ),
-        if (_pincode.isNotEmpty) Text("Pincode: $_pincode"),
-      ],
-    );
-  }
-
-  Widget _buildOrdersBox() {
-    if (_orders.isEmpty) {
-      return const Text("No orders found.");
-    }
-
-    return Column(
-      children: _orders.take(5).map((o) {
-        final name = o['product_name'] ?? "Product";
-        final price = o['price']?.toString() ?? "0";
-        final status = o['status'] ?? "Pending";
-
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-          subtitle: Text("Status: $status"),
-          trailing: Text(
-            "₹$price",
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        );
-      }).toList(),
-    );
-  }
 }
 
 class _SimpleExpansionTile extends StatelessWidget {
@@ -547,4 +465,3 @@ class _SimpleExpansionTile extends StatelessWidget {
     );
   }
 }
-

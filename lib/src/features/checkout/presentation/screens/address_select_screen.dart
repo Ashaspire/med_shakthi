@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
@@ -30,7 +31,7 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
     super.initState();
 
     Future.microtask(() {
-      context.read<AddressStore>().fetchAddresses();
+      if (mounted) context.read<AddressStore>().fetchAddresses();
     });
   }
 
@@ -151,9 +152,11 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
           builder: (context, setSheetState) {
             return Container(
               height: MediaQuery.of(context).size.height * 0.9,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
               ),
               child: Column(
                 children: [
@@ -176,7 +179,11 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
                                 color: Colors.grey,
                               ),
                               filled: true,
-                              fillColor: Colors.grey[100],
+                              fillColor:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.grey[900]
+                                  : Colors.grey[100],
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                               ),
@@ -266,7 +273,7 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
                           bottom: 20,
                           child: FloatingActionButton(
                             mini: true,
-                            backgroundColor: Colors.white,
+                            backgroundColor: Theme.of(context).cardColor,
                             onPressed: () {
                               _getCurrentLocation().then(
                                 (_) => setSheetState(() {}),
@@ -286,7 +293,7 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.05),
@@ -368,6 +375,10 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
                               isSelected: addressToEdit?.isSelected ?? false,
                             );
 
+                            // Capture navigator before async operation
+                            if (!mounted) return;
+                            final navigator = Navigator.of(context);
+
                             if (addressToEdit != null) {
                               await context.read<AddressStore>().updateAddress(
                                 newAddress,
@@ -378,7 +389,8 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
                               );
                             }
 
-                            if (mounted) Navigator.pop(context);
+                            if (!mounted) return;
+                            navigator.pop();
                           },
                           child: const Text(
                             "CONFIRM LOCATION",
@@ -482,7 +494,7 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: address.isSelected
@@ -491,63 +503,49 @@ class _AddressSelectScreenState extends State<AddressSelectScreen> {
                           width: 1.5,
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          // 1. Radio Button for Selection
-                          Transform.scale(
-                            scale: 1.2,
-                            child: Radio<String>(
-                              value: address.id,
-                              groupValue: store.selectedAddress?.id,
-                              activeColor: Colors.teal,
-                              onChanged: (val) {
-                                if (val != null) store.selectAddressLocal(val);
-                              },
-                            ),
+                      child: RadioListTile<String>(
+                        value: address.id,
+                        groupValue: store.selectedAddress?.id,
+                        activeColor: Colors.teal,
+                        onChanged: (val) {
+                          if (val != null) store.selectAddressLocal(val);
+                        },
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        title: Text(
+                          address.title,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: address.isSelected
+                                ? Colors.teal
+                                : Theme.of(context).textTheme.bodyLarge?.color,
                           ),
-
-                          // 2. Address Details
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  address.title,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    color: address.isSelected
-                                        ? Colors.teal
-                                        : Colors.black,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  address.fullAddress,
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 14,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Text(
+                            address.fullAddress,
+                            style: TextStyle(
+                              color: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.color
+                                  ?.withValues(alpha: 0.6),
+                              fontSize: 14,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-
-                          // 3. Edit (Pencil) Button
-                          IconButton(
-                            onPressed: () {
-                              _showAddAddressBottomSheet(
-                                addressToEdit: address,
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.edit,
-                              color: Colors.blueGrey,
-                            ),
-                          ),
-                        ],
+                        ),
+                        secondary: IconButton(
+                          onPressed: () {
+                            _showAddAddressBottomSheet(addressToEdit: address);
+                          },
+                          icon: const Icon(Icons.edit, color: Colors.blueGrey),
+                        ),
                       ),
                     ),
                   ),
