@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:med_shakthi/src/features/category/category_ui.dart';
 import 'package:med_shakthi/src/features/category/category_products_page.dart';
-import 'package:med_shakthi/src/features/category/devices_page.dart';
-import 'package:med_shakthi/src/features/health/health_page.dart';
-import 'package:med_shakthi/src/features/vitamins/vitamins_page.dart';
+import 'package:med_shakthi/src/features/search/presentation/screens/global_search_page.dart';
+
 import 'package:med_shakthi/src/features/products/data/repositories/product_repository.dart';
 import 'package:med_shakthi/src/features/wishlist/presentation/screens/wishlist_page.dart';
 import 'package:med_shakthi/src/features/wishlist/data/wishlist_service.dart';
@@ -20,8 +19,12 @@ import 'package:med_shakthi/src/features/cart/data/cart_data.dart';
 import 'package:med_shakthi/src/features/cart/data/cart_item.dart';
 import 'package:med_shakthi/src/features/products/data/models/product_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:med_shakthi/src/features/search/search_page.dart';
+
+import 'package:med_shakthi/src/features/banners/widgets/banner_carousel.dart';
+import 'package:med_shakthi/src/features/banners/widgets/static_pharmacy_banners.dart';
+import '../profile/presentation/screens/qr_scanner_page.dart';
 import 'package:med_shakthi/src/core/utils/smart_product_image.dart';
+import 'package:med_shakthi/src/core/utils/custom_snackbar.dart';
 
 /// This screen implements the "Med Shakti home page" for Retailers
 class PharmacyHomeScreen extends StatefulWidget {
@@ -35,6 +38,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
   // State allows us to track dynamic changes, like the selected tab in the navigation bar.
   int _selectedIndex = 0;
   final ProductRepository _productRepo = ProductRepository();
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -47,9 +51,8 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: IndexedStack(
         index: _selectedIndex,
         children: [
@@ -86,9 +89,36 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
             _buildTopBar(),
             // Top Bar
             const SizedBox(height: 24),
-            // MODIFIED: Switched back to RecentPurchaseCard
-            // When no order exists, this card will show the Promo Banner design.
-            const PromoBannerSlider(),
+            // Banner Carousel from Supabase
+            BannerCarousel(
+              fallbackWidget: const StaticPharmacyBanners(),
+              onBannerTap: (category) {
+                if (category.toLowerCase() == "medicines") {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const CategoryProductsPage(categoryName: "Medicines"),
+                    ),
+                  );
+                } else if (category.toLowerCase() == "lab test") {
+                  // Navigate to Lab Tests (placeholder if not exists)
+                  showCustomSnackBar(context, "Lab Tests coming soon");
+                } else if (category.toLowerCase() == "upload rx") {
+                  // Navigate to Upload Prescription (placeholder)
+                  showCustomSnackBar(context, "Upload Rx coming soon");
+                } else {
+                  // Default fallback
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          CategoryProductsPage(categoryName: category),
+                    ),
+                  );
+                }
+              },
+            ),
             const SizedBox(height: 24),
             _buildSectionTitle("Categories", "See All", () {
               setState(() => _selectedIndex = 1);
@@ -111,7 +141,6 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
 
   /// Builds the top bar containing the Scan button, Search bar, and Cart button.
   Widget _buildTopBar() {
-    final theme = Theme.of(context);
     return Row(
       children: [
         // 👤 PROFILE ICON (replaced scanner)
@@ -126,11 +155,11 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
             height: 50,
             width: 50,
             decoration: BoxDecoration(
-              color: theme.cardColor,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
-                  color: theme.shadowColor.withValues(alpha: 0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   spreadRadius: 1,
                   blurRadius: 10,
                   offset: const Offset(0, 4),
@@ -138,8 +167,8 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
               ],
             ),
             child: Icon(
-              Icons.person_outline,
-              color: theme.iconTheme.color,
+              Icons.person_outline, //  Profile icon
+              color: Theme.of(context).iconTheme.color,
               size: 26,
             ),
           ),
@@ -149,44 +178,67 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
 
         //  SEARCH BAR
         Expanded(
-          child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SearchPage()),
-              );
-            },
-            child: Container(
-              height: 50,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: theme.dividerColor.withValues(alpha: 0.1),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.search,
-                    color: theme.iconTheme.color?.withValues(alpha: 0.6),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "Search medicine",
-                      style: TextStyle(
-                        color: theme.textTheme.bodySmall?.color?.withValues(
-                          alpha: 0.6,
+          child: Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.search, color: Colors.grey),
+                const SizedBox(width: 8),
+
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const GlobalSearchPage(),
                         ),
-                        fontSize: 14,
+                      );
+                    },
+                    child: Container(
+                      color: Colors.transparent, // Hit test
+                      child: IgnorePointer(
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: "Search medicine...",
+                            hintStyle: TextStyle(
+                              color: Theme.of(context).hintColor,
+                              fontSize: 14,
+                            ),
+                            border: InputBorder.none,
+                          ),
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                  Icon(Icons.camera_alt_outlined, color: theme.iconTheme.color),
-                ],
-              ),
+                ),
+
+                //  CAMERA CLICKABLE
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const QRScannerPage()),
+                    );
+                  },
+                  child: Icon(
+                    Icons.camera_alt_outlined,
+                    color: Theme.of(context).iconTheme.color,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -208,11 +260,11 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
                 height: 50,
                 width: 50,
                 decoration: BoxDecoration(
-                  color: theme.cardColor,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.shadowColor.withValues(alpha: 0.1),
+                      color: Colors.grey.withValues(alpha: 0.1),
                       spreadRadius: 1,
                       blurRadius: 10,
                       offset: const Offset(0, 4),
@@ -221,7 +273,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
                 ),
                 child: Icon(
                   Icons.shopping_cart_outlined,
-                  color: theme.iconTheme.color,
+                  color: Theme.of(context).iconTheme.color,
                   size: 24,
                 ),
               ),
@@ -292,54 +344,51 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
 
   /// Builds the horizontal list of circular categories
   Widget _buildCategoriesList() {
-    // final theme = Theme.of(context);
     return SizedBox(
       height: 110, // Increased from 100
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
           // Placeholder for categories, you can map real data here later
-          _buildCategoryItem(Icons.medication, "Medicines", Colors.blue),
+          _buildCategoryItem(Icons.medication, "Medicines", Colors.blue[100]!),
           const SizedBox(width: 20),
-          _buildCategoryItem(Icons.medical_services, "Devices", Colors.purple),
+          _buildCategoryItem(
+            Icons.medical_services,
+            "Devices",
+            Colors.purple[100]!,
+          ),
           const SizedBox(width: 20),
-          _buildCategoryItem(Icons.favorite, "Health", Colors.red),
+          _buildCategoryItem(Icons.favorite, "Health", Colors.red[100]!),
           const SizedBox(width: 20),
-          _buildCategoryItem(Icons.wb_sunny, "Vitamins", Colors.orange),
+          _buildCategoryItem(Icons.wb_sunny, "Vitamins", Colors.orange[100]!),
           const SizedBox(width: 20),
-          _buildCategoryItem(Icons.spa, "Care", Colors.green),
+          _buildCategoryItem(Icons.spa, "Care", Colors.green[100]!),
         ],
       ),
     );
   }
 
   Widget _buildCategoryItem(IconData icon, String label, Color color) {
-    final theme = Theme.of(context);
     return GestureDetector(
       onTap: () {
         // Navigate to CategoryProductsPage when Medicines is tapped
-        if (label == "Medicines") {
+        if (label == "Medicines" ||
+            label == "Health" ||
+            label == "Vitamins" ||
+            label == "Care") {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-                  const CategoryProductsPage(categoryName: "Medicines"),
+              builder: (context) => CategoryProductsPage(categoryName: label),
             ),
           );
         } else if (label == "Devices") {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const DevicesPage()),
-          );
-        } else if (label == "Health") {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const HealthPage()),
-          );
-        } else if (label == "Vitamins") {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const VitaminsPage()),
+            MaterialPageRoute(
+              builder: (context) =>
+                  const CategoryProductsPage(categoryName: "Devices"),
+            ),
           );
         }
         // You can add navigation for other categories here as well
@@ -350,19 +399,23 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
             height: 60,
             width: 60,
             decoration: BoxDecoration(
-              color: color.withValues(
-                alpha: theme.brightness == Brightness.dark ? 0.2 : 0.1,
-              ),
+              color: Theme.of(context).cardColor,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: theme.shadowColor.withValues(alpha: 0.05),
+                  color: Colors.grey.withValues(alpha: 0.05),
                   blurRadius: 10,
                   spreadRadius: 2,
                 ),
               ],
             ),
-            child: Center(child: Icon(icon, color: color, size: 28)),
+            child: Center(
+              child: Icon(
+                icon,
+                color: Theme.of(context).iconTheme.color,
+                size: 28,
+              ),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -380,7 +433,6 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
 
   /// Fetches Real Products from Supabase
   Widget _buildProductCard(Product product) {
-    final theme = Theme.of(context);
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -391,11 +443,11 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
         margin: const EdgeInsets.only(right: 16),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: theme.cardColor,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: theme.shadowColor.withValues(alpha: 0.08),
+              color: Colors.grey.withValues(alpha: 0.08),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -408,8 +460,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
               child: Center(
                 child: SmartProductImage(
                   imageUrl: product.image,
-                  category: product
-                      .category, // Pass category for intelligent fallback
+                  category: product.category,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -419,19 +470,12 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
               product.name,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: theme.textTheme.titleMedium?.color,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             const SizedBox(height: 4),
             Text(
               product.category,
-              style: TextStyle(
-                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),
             const SizedBox(height: 8),
             Row(
@@ -455,7 +499,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: theme.textTheme.bodyLarge?.color,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -478,9 +522,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
                       context,
                       MaterialPageRoute(builder: (_) => const CartPage()),
                     );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Item added to cart ")),
-                    );
+                    showCustomSnackBar(context, "Item added to cart");
                   },
                   child: Container(
                     height: 32,
@@ -502,7 +544,6 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
 
   /// Fetches Real Products from Supabase
   Widget _buildRealBestsellersList() {
-    // final theme = Theme.of(context);
     return SizedBox(
       height: 280, // Increased from 260 for safety
       child: FutureBuilder<List<Product>>(
@@ -516,7 +557,8 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
             return const Center(child: Text("No products available"));
           }
 
-          final products = snapshot.data!;
+          final allProducts = snapshot.data!;
+          final products = allProducts;
 
           return ListView.builder(
             scrollDirection: Axis.horizontal,
@@ -532,11 +574,8 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
     );
   }
 
-  final SupabaseClient supabase = Supabase.instance.client;
-
   /// Custom Bottom Navigation Bar
   Widget _buildBottomNavigationBar() {
-    final theme = Theme.of(context);
     final navItems = [
       {'icon': Icons.home, 'label': 'Home'},
       {'icon': Icons.grid_view, 'label': 'Category'},
@@ -547,10 +586,10 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.cardColor,
+        color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-            color: theme.shadowColor.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -606,22 +645,14 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
           children: [
             Icon(
               icon,
-              color: isSelected
-                  ? const Color(0xFF5A9CA0)
-                  : Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+              color: isSelected ? const Color(0xFF5A9CA0) : Colors.grey,
               size: 26,
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: isSelected
-                    ? const Color(0xFF5A9CA0)
-                    : Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+                color: isSelected ? const Color(0xFF5A9CA0) : Colors.grey,
                 fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
