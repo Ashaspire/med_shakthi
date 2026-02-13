@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
-
 import '../orders/orders_page.dart';
 import '../profile/presentation/screens/chat_list_screen.dart';
 import '../profile/presentation/screens/supplier_category_page.dart';
-import '../profile/presentation/screens/supplier_profile_screen.dart';
 import '../profile/presentation/screens/supplier_payout_page.dart';
-import 'package:provider/provider.dart';
-import '../../core/theme/theme_provider.dart';
+import '../banners/screens/manage_banners_screen.dart';
+import '../profile/presentation/screens/supplier_profile_screen.dart';
 import '../supplier/inventory/ui/add_product_page.dart';
-import '../supplier/inventory/ui/my_products_page.dart';
+import '../supplier/orders/supplier_orders_page.dart'; // Import the new page
 import '../supplier/sales/sales_analytics_page.dart';
+import '../../core/theme/theme_provider.dart';
+import 'package:provider/provider.dart';
+import '../supplier/inventory/ui/my_products_page.dart';
+import '../supplier/sales/sales_stats_service.dart';
 
 class SupplierDashboard extends StatefulWidget {
   const SupplierDashboard({super.key});
@@ -21,83 +23,65 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
-    setState(() => _selectedIndex = index);
+    if (index == 2) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AddProductPage()),
+      );
+    } else {
+      setState(() => _selectedIndex = index);
+    }
   }
 
   late final List<Widget> _pages = [
     const SupplierDashboardHome(),
     const SupplierCategoryPage(),
-    const SizedBox(), // Placeholder for center "Add" button which navigates instead of switching tabs
-    const OrdersPage(),
+    const SizedBox(), // Placeholder for Add Product (handled by onTap)
+    const SupplierOrdersPage(), // Updated to SupplierOrdersPage
     const MyProductsPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      // Removed FloatingActionButton as requested
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(child: _pages[_selectedIndex]),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFF4CA6A8),
-          unselectedItemColor: Colors.grey,
-          showUnselectedLabels: true,
-          currentIndex: _selectedIndex == 2
-              ? 0
-              : _selectedIndex, // Prevent selecting "Add Product" visually if needed, but here we treat it as a tab
-          onTap: (index) {
-            if (index == 2) {
-              // Center Tab - Add Product
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AddProductPage()),
-              );
-            } else {
-              _onItemTapped(index);
-            }
-          },
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.home_filled, size: 26),
-              label: "Home",
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view, size: 26),
-              label: "Category",
-            ),
-            BottomNavigationBarItem(
-              icon: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF4CA6A8),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.add, color: Colors.white, size: 24),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: const Color(0xFF4CA6A8),
+        unselectedItemColor: Colors.grey,
+        showUnselectedLabels: true,
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.home_filled, size: 26),
+            label: "Home",
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.grid_view, size: 26),
+            label: "Category",
+          ),
+          BottomNavigationBarItem(
+            icon: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: const BoxDecoration(
+                color: Color(0xFF4CA6A8),
+                shape: BoxShape.circle,
               ),
-              label: "",
+              child: const Icon(Icons.add, color: Colors.white, size: 24),
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long, size: 26),
-              label: "Order",
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.inventory_2_outlined, size: 26),
-              label: "My Products",
-            ),
-          ],
-        ),
+            label: "",
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long, size: 26),
+            label: "Order",
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.inventory_2_outlined, size: 26),
+            label: "My Products",
+          ),
+        ],
       ),
     );
   }
@@ -116,99 +100,58 @@ class SupplierDashboardHome extends StatelessWidget {
           const SizedBox(height: 20),
           _buildTopBar(context),
           const SizedBox(height: 20),
-          _buildPromoBanner(context),
+          _buildPromoBanner(),
           const SizedBox(height: 30),
-          _buildSectionHeader("Categories", context: context),
+          _buildSectionHeader(context, "Categories"),
           const SizedBox(height: 15),
           _buildCategoryList(context),
           const SizedBox(height: 30),
-          _buildSectionHeader("Performance Stats", context: context),
+          _buildSectionHeader(context, "Performance Stats"),
           const SizedBox(height: 15),
           _buildPerformanceGrid(context),
-          const SizedBox(height: 100), // Space for FAB
+          const SizedBox(height: 100),
         ],
       ),
     );
   }
 
   Widget _buildTopBar(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
     return Row(
       children: [
         GestureDetector(
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const SupplierProfileScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => const SupplierProfileScreen()),
             );
           },
           child: Container(
-            height: 50,
-            width: 50,
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
-                  spreadRadius: 1,
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(15),
             ),
             child: Icon(
               Icons.person_outline,
               color: Theme.of(context).iconTheme.color,
-              size: 26,
             ),
           ),
         ),
         const SizedBox(width: 15),
 
         Expanded(
-          child: GestureDetector(
-            onTap: () {
-              // Navigate to search page or show search functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Search functionality coming soon'),
-                ),
-              );
-            },
-            child: Container(
-              height: 50,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.search,
-                    color: Theme.of(
-                      context,
-                    ).iconTheme.color?.withValues(alpha: 0.6),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "Search products, orders...",
-                      style: TextStyle(
-                        color: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
+          child: Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(25),
+            ),
+            child: const TextField(
+              decoration: InputDecoration(
+                prefixIcon: Icon(Icons.search, color: Colors.grey),
+                hintText: "Search analytics...",
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 15),
               ),
             ),
           ),
@@ -217,27 +160,121 @@ class SupplierDashboardHome extends StatelessWidget {
         const SizedBox(width: 15),
 
         // Theme Toggle (Replaced Cart)
-        GestureDetector(
-          onTap: () {
-            themeProvider.toggleTheme();
+        Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            return GestureDetector(
+              onTap: () {
+                themeProvider.toggleTheme();
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                  color: Theme.of(context).iconTheme.color,
+                ),
+              ),
+            );
           },
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-              color: Theme.of(context).iconTheme.color,
-            ),
-          ),
         ),
       ],
     );
   }
 
-  Widget _buildPromoBanner(BuildContext context) {
+  Widget _buildPromoBanner() {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: SalesStatsService().fetchSalesStats(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildBannerContainer(
+            child: const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          );
+        }
+
+        // Default values if error or empty
+        final growth = snapshot.data?['growth'] ?? 0.0;
+        final revenue = snapshot.data?['totalRevenue'] ?? 0.0;
+
+        return _buildBannerContainer(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Supplier Growth",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.trending_up,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "+$growth%",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Total Revenue: ₹${revenue.toStringAsFixed(2)}",
+                style: const TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SalesAnalyticsPage(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF4CA6A8),
+                  shape: const StadiumBorder(),
+                  elevation: 0,
+                ),
+                child: const Text("View Report"),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBannerContainer({required Widget child}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -248,40 +285,19 @@ class SupplierDashboardHome extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Supplier Growth",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "Monthly payout is ready",
-            style: TextStyle(color: Colors.white70),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF4CA6A8),
-              shape: const StadiumBorder(),
-              elevation: 0,
-            ),
-            child: const Text("View Report"),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4CA6A8).withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
+      child: child,
     );
   }
 
-  Widget _buildSectionHeader(String title, {BuildContext? context}) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -290,9 +306,7 @@ class SupplierDashboardHome extends StatelessWidget {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: context != null
-                ? Theme.of(context).textTheme.bodyLarge?.color
-                : const Color(0xFF2D2D2D),
+            color: Theme.of(context).textTheme.titleLarge?.color,
           ),
         ),
         const Text(
@@ -308,10 +322,31 @@ class SupplierDashboardHome extends StatelessWidget {
 
   Widget _buildCategoryList(BuildContext context) {
     final List<Map<String, dynamic>> cats = [
-      {"icon": Icons.inventory_2, "label": "Orders"},
-      {"icon": Icons.analytics, "label": "Sales"},
-      {"icon": Icons.people, "label": "Clients"},
-      {"icon": Icons.account_balance_wallet, "label": "Payouts"},
+      {
+        'icon': Icons.inventory,
+        'name': 'Inventory',
+        'page': const MyProductsPage(),
+      },
+      {
+        'icon': Icons.shopping_bag,
+        'name': 'Orders',
+        'page': const SupplierOrdersPage(),
+      },
+      {
+        'icon': Icons.analytics,
+        'name': 'Analytics',
+        'page': const SalesAnalyticsPage(),
+      },
+      {
+        'icon': Icons.campaign,
+        'name': 'Banners',
+        'page': const ManageBannersScreen(),
+      },
+      {
+        'icon': Icons.account_balance_wallet,
+        'name': 'Payouts',
+        'page': const SupplierPayoutPage(),
+      },
     ];
 
     return SizedBox(
@@ -327,7 +362,14 @@ class SupplierDashboardHome extends StatelessWidget {
             borderRadius: BorderRadius.circular(50),
             onTap: () {
               //  NAVIGATION LOGIC
-              if (label == "Orders") {
+              if (label == "Banners") {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ManageBannersScreen(),
+                  ),
+                );
+              } else if (label == "Orders") {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const OrdersPage()),
@@ -368,9 +410,7 @@ class SupplierDashboardHome extends StatelessWidget {
                   label,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -417,9 +457,7 @@ class SupplierDashboardHome extends StatelessWidget {
             height: 55,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : const Color(0xFFF7F8FA),
+              color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(15),
             ),
             child: const Icon(Icons.bar_chart, color: Colors.grey, size: 40),
@@ -428,11 +466,7 @@ class SupplierDashboardHome extends StatelessWidget {
           Text(sub, style: const TextStyle(color: Colors.grey, fontSize: 12)),
           Text(
             title,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: Theme.of(context).textTheme.bodyLarge?.color,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const Spacer(),
           Row(
