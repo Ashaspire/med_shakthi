@@ -10,7 +10,7 @@ import 'package:med_shakthi/src/features/cart/presentation/screens/cart_page.dar
 import 'package:med_shakthi/src/features/orders/orders_page.dart';
 import 'package:med_shakthi/src/features/products/presentation/screens/product_page.dart';
 import 'package:provider/provider.dart';
-import '../orders/chat_screen.dart';
+
 import '../profile/presentation/screens/ai_assistant_page.dart';
 import '../profile/presentation/screens/chat_details_screen.dart';
 import '../profile/presentation/screens/profile_screen.dart';
@@ -18,8 +18,7 @@ import 'package:med_shakthi/src/features/cart/data/cart_data.dart';
 import 'package:med_shakthi/src/features/cart/data/cart_item.dart';
 import 'package:med_shakthi/src/features/products/data/models/product_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:med_shakthi/src/features/search/search_page.dart';
-import 'package:med_shakthi/src/core/utils/smart_product_image.dart';
+
 import 'package:med_shakthi/src/features/banners/widgets/banner_carousel.dart';
 import '../profile/presentation/screens/qr_scanner_page.dart';
 

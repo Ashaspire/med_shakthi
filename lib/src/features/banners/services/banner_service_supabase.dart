@@ -1,15 +1,14 @@
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/banner_model_supabase.dart';
 
 /// Banner Service for Supabase
-/// 
+///
 /// Handles all banner operations using Supabase PostgreSQL and Storage
 
 class BannerServiceSupabase {
   final SupabaseClient _supabase = Supabase.instance.client;
-  
+
   static const String _bannersTable = 'banners';
   static const String _storageBucket = 'banner-images';
 
@@ -58,20 +57,21 @@ class BannerServiceSupabase {
   // Upload banner image to Supabase Storage
   Future<String> _uploadBannerImage(XFile imageFile, String supplierId) async {
     try {
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${supplierId}.jpg';
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${supplierId}.jpg';
       final filePath = '$supplierId/$fileName';
-      
+
       // Read file as bytes for web compatibility
       final bytes = await imageFile.readAsBytes();
-      
+
       await _supabase.storage
           .from(_storageBucket)
           .uploadBinary(filePath, bytes);
-      
+
       final publicUrl = _supabase.storage
           .from(_storageBucket)
           .getPublicUrl(filePath);
-      
+
       return publicUrl;
     } catch (e) {
       throw Exception('Failed to upload image: $e');
@@ -80,39 +80,33 @@ class BannerServiceSupabase {
 
   // Get active banners (real-time stream)
   Stream<List<SupabaseBannerModel>> getActiveBannersStream() {
-    return _supabase
-        .from(_bannersTable)
-        .stream(primaryKey: ['id'])
-        .map((data) {
-          // RLS policy already filters by date (start_date <= NOW and end_date >= NOW)
-          // We only need to check active status and sort
-          return data
-              .map((json) => SupabaseBannerModel.fromJson(json))
-              .where((banner) => banner.active)
-              .toList()
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        });
+    return _supabase.from(_bannersTable).stream(primaryKey: ['id']).map((data) {
+      // RLS policy already filters by date (start_date <= NOW and end_date >= NOW)
+      // We only need to check active status and sort
+      return data
+          .map((json) => SupabaseBannerModel.fromJson(json))
+          .where((banner) => banner.active)
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    });
   }
 
   // Get banners by supplier (for supplier dashboard)
-  Stream<List<SupabaseBannerModel>> getSupplierBannersStream(String supplierId) {
-    return _supabase
-        .from(_bannersTable)
-        .stream(primaryKey: ['id'])
-        .map((data) {
-          // RLS policy already ensures suppliers only see their own banners
-          return data
-              .map((json) => SupabaseBannerModel.fromJson(json))
-              .toList()
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        });
+  Stream<List<SupabaseBannerModel>> getSupplierBannersStream(
+    String supplierId,
+  ) {
+    return _supabase.from(_bannersTable).stream(primaryKey: ['id']).map((data) {
+      // RLS policy already ensures suppliers only see their own banners
+      return data.map((json) => SupabaseBannerModel.fromJson(json)).toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    });
   }
 
   // Get active banners (one-time fetch)
   Future<List<SupabaseBannerModel>> getActiveBanners() async {
     try {
       final now = DateTime.now().toUtc().toIso8601String();
-      
+
       final response = await _supabase
           .from(_bannersTable)
           .select()
@@ -170,12 +164,12 @@ class BannerServiceSupabase {
   }
 
   // Update banner
-  Future<void> updateBanner(String bannerId, Map<String, dynamic> updates) async {
+  Future<void> updateBanner(
+    String bannerId,
+    Map<String, dynamic> updates,
+  ) async {
     try {
-      await _supabase
-          .from(_bannersTable)
-          .update(updates)
-          .eq('id', bannerId);
+      await _supabase.from(_bannersTable).update(updates).eq('id', bannerId);
     } catch (e) {
       throw Exception('Failed to update banner: $e');
     }
@@ -203,19 +197,14 @@ class BannerServiceSupabase {
         final bucketIndex = pathSegments.indexOf(_storageBucket);
         if (bucketIndex != -1 && bucketIndex < pathSegments.length - 1) {
           final filePath = pathSegments.sublist(bucketIndex + 1).join('/');
-          
+
           // Delete image from storage
-          await _supabase.storage
-              .from(_storageBucket)
-              .remove([filePath]);
+          await _supabase.storage.from(_storageBucket).remove([filePath]);
         }
       }
 
       // Delete banner record
-      await _supabase
-          .from(_bannersTable)
-          .delete()
-          .eq('id', bannerId);
+      await _supabase.from(_bannersTable).delete().eq('id', bannerId);
     } catch (e) {
       throw Exception('Failed to delete banner: $e');
     }
@@ -225,7 +214,7 @@ class BannerServiceSupabase {
   Future<void> disableExpiredBanners() async {
     try {
       final now = DateTime.now().toIso8601String();
-      
+
       await _supabase
           .from(_bannersTable)
           .update({'active': false})
@@ -238,20 +227,19 @@ class BannerServiceSupabase {
 
   // Get banners by category
   Stream<List<SupabaseBannerModel>> getBannersByCategory(String category) {
-    return _supabase
-        .from(_bannersTable)
-        .stream(primaryKey: ['id'])
-        .map((data) {
-          final now = DateTime.now();
-          return data
-              .map((json) => SupabaseBannerModel.fromJson(json))
-              .where((banner) =>
-                  banner.category == category &&
-                  banner.active &&
-                  banner.startDate.isBefore(now) &&
-                  banner.endDate.isAfter(now))
-              .toList();
-        });
+    return _supabase.from(_bannersTable).stream(primaryKey: ['id']).map((data) {
+      final now = DateTime.now();
+      return data
+          .map((json) => SupabaseBannerModel.fromJson(json))
+          .where(
+            (banner) =>
+                banner.category == category &&
+                banner.active &&
+                banner.startDate.isBefore(now) &&
+                banner.endDate.isAfter(now),
+          )
+          .toList();
+    });
   }
 
   // Get banner by ID

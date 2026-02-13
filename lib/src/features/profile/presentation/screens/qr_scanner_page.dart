@@ -14,10 +14,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Scan QR Code"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text("Scan QR Code"), centerTitle: true),
       body: MobileScanner(
         onDetect: (barcodeCapture) {
           if (isScanned) return;
@@ -32,11 +29,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
 
               Navigator.pop(context);
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("QR Scanned: $code")),
-              );
-
-              print("QR RESULT: $code");
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text("QR Scanned: $code")));
             }
           }
         },

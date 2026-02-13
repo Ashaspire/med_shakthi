@@ -104,7 +104,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF00D9C0).withOpacity(0.2),
+              color: const Color(0xFF00D9C0).withValues(alpha: 0.2),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -142,8 +142,8 @@ class _BannerCarouselState extends State<BannerCarousel> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xFF00D9C0).withOpacity(0.7),
-                        const Color(0xFF00A896).withOpacity(0.8),
+                        const Color(0xFF00D9C0).withValues(alpha: 0.7),
+                        const Color(0xFF00A896).withValues(alpha: 0.8),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -199,7 +199,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
                     Text(
                       banner.subtitle,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -217,7 +217,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -247,7 +247,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
           decoration: BoxDecoration(
             color: isActive
                 ? const Color(0xFF00D9C0)
-                : Colors.white.withOpacity(0.3),
+                : Colors.white.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(4),
           ),
         );

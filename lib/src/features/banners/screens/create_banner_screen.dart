@@ -8,7 +8,7 @@ import 'package:med_shakthi/src/features/banners/models/banner_model_supabase.da
 
 class CreateBannerScreen extends StatefulWidget {
   final SupabaseBannerModel? existingBanner;
-  
+
   const CreateBannerScreen({Key? key, this.existingBanner}) : super(key: key);
 
   @override
@@ -31,7 +31,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
     'Health',
     'Vitamins',
     'Baby Care',
-    'Personal Care'
+    'Personal Care',
   ];
 
   DateTime _startDate = DateTime.now();
@@ -46,7 +46,9 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
       final banner = widget.existingBanner!;
       _titleController.text = banner.title;
       _subtitleController.text = banner.subtitle;
-      _selectedCategory = _categories.contains(banner.category) ? banner.category : _categories.first;
+      _selectedCategory = _categories.contains(banner.category)
+          ? banner.category
+          : _categories.first;
       _startDate = banner.startDate;
       _endDate = banner.endDate;
       _isActive = banner.active;
@@ -75,9 +77,9 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
       }
     }
   }
@@ -119,9 +121,9 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
   Future<void> _publishBanner() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedImageFile == null && widget.existingBanner == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select an image')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select an image')));
       return;
     }
 
@@ -188,7 +190,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -206,11 +208,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
         ),
       ),
       body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-                color: theme.primaryColor,
-              ),
-            )
+          ? Center(child: CircularProgressIndicator(color: theme.primaryColor))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Form(
@@ -309,14 +307,17 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
                 borderRadius: BorderRadius.circular(14),
                 child: _selectedImageFile != null
                     ? (kIsWeb
-                        ? Image.network(
-                            _selectedImageFile!.path,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(color: Colors.grey);
-                            },
-                          )
-                        : Image.file(File(_selectedImageFile!.path), fit: BoxFit.cover))
+                          ? Image.network(
+                              _selectedImageFile!.path,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(color: Colors.grey);
+                              },
+                            )
+                          : Image.file(
+                              File(_selectedImageFile!.path),
+                              fit: BoxFit.cover,
+                            ))
                     : Image.network(
                         widget.existingBanner!.imageUrl,
                         fit: BoxFit.cover,
@@ -324,7 +325,10 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
                           return Container(
                             color: Colors.grey[800],
                             child: const Center(
-                              child: Icon(Icons.broken_image, color: Colors.white54),
+                              child: Icon(
+                                Icons.broken_image,
+                                color: Colors.white54,
+                              ),
                             ),
                           );
                         },
@@ -336,7 +340,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: theme.primaryColor.withOpacity(0.1),
+                      color: theme.primaryColor.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -349,7 +353,9 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
                   Text(
                     'Upload Banner Image',
                     style: TextStyle(
-                      color: theme.textTheme.bodyLarge?.color?.withOpacity(0.7),
+                      color: theme.textTheme.bodyLarge?.color?.withValues(
+                        alpha: 0.7,
+                      ),
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -358,7 +364,9 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
                   Text(
                     'Tap to select image',
                     style: TextStyle(
-                      color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                      color: theme.textTheme.bodyMedium?.color?.withValues(
+                        alpha: 0.5,
+                      ),
                       fontSize: 14,
                     ),
                   ),
@@ -381,7 +389,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
         Text(
           label,
           style: TextStyle(
-            color: theme.textTheme.bodyLarge?.color?.withOpacity(0.7),
+            color: theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.7),
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -393,7 +401,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: theme.shadowColor.withOpacity(0.1),
+                color: theme.shadowColor.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -404,7 +412,11 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
             style: TextStyle(color: theme.textTheme.bodyLarge?.color),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5)),
+              hintStyle: TextStyle(
+                color: theme.textTheme.bodyMedium?.color?.withValues(
+                  alpha: 0.5,
+                ),
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -429,7 +441,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
         Text(
           'Category',
           style: TextStyle(
-            color: theme.textTheme.bodyLarge?.color?.withOpacity(0.7),
+            color: theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.7),
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -441,7 +453,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: theme.shadowColor.withOpacity(0.1),
+                color: theme.shadowColor.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -463,10 +475,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
             ),
             icon: Icon(Icons.arrow_drop_down, color: theme.primaryColor),
             items: _categories.map((category) {
-              return DropdownMenuItem(
-                value: category,
-                child: Text(category),
-              );
+              return DropdownMenuItem(value: category, child: Text(category));
             }).toList(),
             onChanged: (value) {
               if (value != null) {
@@ -493,7 +502,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
         Text(
           label,
           style: TextStyle(
-            color: theme.textTheme.bodyLarge?.color?.withOpacity(0.7),
+            color: theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.7),
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -508,7 +517,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: theme.shadowColor.withOpacity(0.1),
+                  color: theme.shadowColor.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -516,11 +525,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.calendar_today,
-                  color: theme.primaryColor,
-                  size: 20,
-                ),
+                Icon(Icons.calendar_today, color: theme.primaryColor, size: 20),
                 const SizedBox(width: 12),
                 Text(
                   '${date.day}/${date.month}/${date.year}',
@@ -546,7 +551,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: theme.shadowColor.withOpacity(0.1),
+            color: theme.shadowColor.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -570,8 +575,8 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
                 _isActive = value;
               });
             },
-            activeColor: theme.primaryColor,
-            activeTrackColor: theme.primaryColor.withOpacity(0.5),
+            activeThumbColor: theme.primaryColor,
+            activeTrackColor: theme.primaryColor.withValues(alpha: 0.5),
           ),
         ],
       ),
@@ -585,8 +590,8 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            theme.primaryColor, 
-            theme.primaryColor.withOpacity(0.8)
+            theme.primaryColor,
+            theme.primaryColor.withValues(alpha: 0.8),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -594,7 +599,7 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: theme.primaryColor.withOpacity(0.3),
+            color: theme.primaryColor.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -609,20 +614,25 @@ class _CreateBannerScreenState extends State<CreateBannerScreen> {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: _isLoading 
-          ? const SizedBox(
-              height: 24, 
-              width: 24,
-              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-            )
-          : Text(
-              widget.existingBanner != null ? 'Update Banner' : 'Publish Offer',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+        child: _isLoading
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : Text(
+                widget.existingBanner != null
+                    ? 'Update Banner'
+                    : 'Publish Offer',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
       ),
     );
   }
