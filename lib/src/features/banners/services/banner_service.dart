@@ -6,7 +6,7 @@ import '../models/banner_model.dart';
 class BannerService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
-  
+
   static const String _bannersCollection = 'banners';
 
   // Create a new banner
@@ -52,12 +52,13 @@ class BannerService {
   // Upload banner image to Firebase Storage
   Future<String> _uploadBannerImage(File imageFile, String supplierId) async {
     try {
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${supplierId}.jpg';
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_$supplierId.jpg';
       final ref = _storage.ref().child('banners/$supplierId/$fileName');
-      
+
       final uploadTask = await ref.putFile(imageFile);
       final downloadUrl = await uploadTask.ref.getDownloadURL();
-      
+
       return downloadUrl;
     } catch (e) {
       throw Exception('Failed to upload image: $e');
@@ -67,7 +68,7 @@ class BannerService {
   // Get active banners (real-time stream)
   Stream<List<BannerModel>> getActiveBannersStream() {
     final now = DateTime.now();
-    
+
     return _firestore
         .collection(_bannersCollection)
         .where('active', isEqualTo: true)
@@ -77,11 +78,11 @@ class BannerService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => BannerModel.fromFirestore(doc))
-          .where((banner) => banner.isValid)
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) => BannerModel.fromFirestore(doc))
+              .where((banner) => banner.isValid)
+              .toList();
+        });
   }
 
   // Get banners by supplier (for supplier dashboard)
@@ -92,14 +93,17 @@ class BannerService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => BannerModel.fromFirestore(doc))
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) => BannerModel.fromFirestore(doc))
+              .toList();
+        });
   }
 
   // Update banner
-  Future<void> updateBanner(String bannerId, Map<String, dynamic> updates) async {
+  Future<void> updateBanner(
+    String bannerId,
+    Map<String, dynamic> updates,
+  ) async {
     try {
       await _firestore
           .collection(_bannersCollection)
@@ -113,10 +117,9 @@ class BannerService {
   // Toggle banner active status
   Future<void> toggleBannerStatus(String bannerId, bool active) async {
     try {
-      await _firestore
-          .collection(_bannersCollection)
-          .doc(bannerId)
-          .update({'active': active});
+      await _firestore.collection(_bannersCollection).doc(bannerId).update({
+        'active': active,
+      });
     } catch (e) {
       throw Exception('Failed to toggle banner status: $e');
     }
@@ -132,10 +135,7 @@ class BannerService {
       }
 
       // Delete banner document
-      await _firestore
-          .collection(_bannersCollection)
-          .doc(bannerId)
-          .delete();
+      await _firestore.collection(_bannersCollection).doc(bannerId).delete();
     } catch (e) {
       throw Exception('Failed to delete banner: $e');
     }
@@ -155,7 +155,7 @@ class BannerService {
       for (var doc in expiredBanners.docs) {
         batch.update(doc.reference, {'active': false});
       }
-      
+
       await batch.commit();
     } catch (e) {
       throw Exception('Failed to disable expired banners: $e');
@@ -165,7 +165,7 @@ class BannerService {
   // Get banners by category
   Stream<List<BannerModel>> getBannersByCategory(String category) {
     final now = DateTime.now();
-    
+
     return _firestore
         .collection(_bannersCollection)
         .where('category', isEqualTo: category)
@@ -176,10 +176,10 @@ class BannerService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => BannerModel.fromFirestore(doc))
-          .where((banner) => banner.isValid)
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) => BannerModel.fromFirestore(doc))
+              .where((banner) => banner.isValid)
+              .toList();
+        });
   }
 }

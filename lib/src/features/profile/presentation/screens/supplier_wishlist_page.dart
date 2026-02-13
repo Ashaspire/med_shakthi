@@ -82,9 +82,9 @@ class _SupplierWishlistPageState extends State<SupplierWishlistPage> {
       ),
     );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Added to cart")),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Added to cart")));
   }
 
   @override
@@ -98,10 +98,7 @@ class _SupplierWishlistPageState extends State<SupplierWishlistPage> {
         automaticallyImplyLeading: false,
         title: const Text(
           "Wishlist",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         ),
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
@@ -149,7 +146,7 @@ class _SupplierWishlistPageState extends State<SupplierWishlistPage> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -167,8 +164,11 @@ class _SupplierWishlistPageState extends State<SupplierWishlistPage> {
             ),
             child: item['image_url'] != null && item['image_url'] != ''
                 ? Image.network(item['image_url'], fit: BoxFit.contain)
-                : const Icon(Icons.medical_services,
-                size: 36, color: Color(0xFF4CA6A8)),
+                : const Icon(
+                    Icons.medical_services,
+                    size: 36,
+                    color: Color(0xFF4CA6A8),
+                  ),
           ),
 
           const SizedBox(width: 14),
@@ -181,13 +181,14 @@ class _SupplierWishlistPageState extends State<SupplierWishlistPage> {
                 Text(
                   item['product_name'] ?? '',
                   style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w600),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   "Category: ${item['category'] ?? '-'}",
-                  style:
-                  const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -216,7 +217,7 @@ class _SupplierWishlistPageState extends State<SupplierWishlistPage> {
                 onPressed: () => _removeWishlist(item['id']),
               ),
             ],
-          )
+          ),
         ],
       ),
     );
