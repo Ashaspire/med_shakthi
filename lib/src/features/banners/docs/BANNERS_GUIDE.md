@@ -25,14 +25,14 @@ Complete banner management system with Firebase and Supabase implementations for
 
 ### Choose Your Backend
 
-**Supabase (Recommended)**
+#### Supabase (Recommended)
 
 - Better free tier
 - SQL power for complex queries
 - Open source, no vendor lock-in
 - Cost-effective at scale
 
-**Firebase**
+#### Firebase
 
 - Excellent if already using Google Cloud
 - Great NoSQL document model
@@ -49,7 +49,7 @@ Complete banner management system with Firebase and Supabase implementations for
 
 ## 📁 File Structure
 
-```
+```text
 banners/
 ├── models/
 │   ├── banner_model.dart (Firebase)
@@ -180,7 +180,7 @@ image_picker: ^1.0.7
 
 ## 🔄 Architecture
 
-```
+```text
 Supplier → CreateBannerScreen → BannerService → Database
                                               → Storage
 
