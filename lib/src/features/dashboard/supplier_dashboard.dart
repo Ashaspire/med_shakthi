@@ -1,4 +1,10 @@
+
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'dart:async';
+
+// Internal Imports
 import '../orders/orders_page.dart';
 import '../profile/presentation/screens/chat_list_screen.dart';
 import '../profile/presentation/screens/supplier_category_page.dart';
@@ -6,12 +12,15 @@ import '../profile/presentation/screens/supplier_payout_page.dart';
 import '../banners/screens/manage_banners_screen.dart';
 import '../profile/presentation/screens/supplier_profile_screen.dart';
 import '../supplier/inventory/ui/add_product_page.dart';
-import '../supplier/orders/supplier_orders_page.dart'; // Import the new page
+import '../supplier/orders/supplier_orders_page.dart';
 import '../supplier/sales/sales_analytics_page.dart';
 import '../../core/theme/theme_provider.dart';
-import 'package:provider/provider.dart';
 import '../supplier/inventory/ui/my_products_page.dart';
 import '../supplier/sales/sales_stats_service.dart';
+
+// -----------------------------------------------------------------------------
+// MAIN DASHBOARD SCREEN
+// -----------------------------------------------------------------------------
 
 class SupplierDashboard extends StatefulWidget {
   const SupplierDashboard({super.key});
@@ -37,18 +46,26 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
     const SupplierDashboardHome(),
     const SupplierCategoryPage(),
     const SizedBox(), // Placeholder for Add Product (handled by onTap)
-    const SupplierOrdersPage(), // Updated to SupplierOrdersPage
+    const SupplierOrdersPage(),
     const MyProductsPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    // Custom Bottom Bar with selected item color from theme or teal
+    const activeColor = Color(0xFF4CA6A8);
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(child: _pages[_selectedIndex]),
+      body: SafeArea(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: _pages[_selectedIndex],
+        ),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF4CA6A8),
+        selectedItemColor: activeColor,
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
         currentIndex: _selectedIndex,
@@ -66,8 +83,15 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
             icon: Container(
               padding: const EdgeInsets.all(10),
               decoration: const BoxDecoration(
-                color: Color(0xFF4CA6A8),
+                color: activeColor,
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26, 
+                    blurRadius: 8, 
+                    offset: Offset(0, 4)
+                  )
+                ]
               ),
               child: const Icon(Icons.add, color: Colors.white, size: 24),
             ),
@@ -87,30 +111,149 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
   }
 }
 
-class SupplierDashboardHome extends StatelessWidget {
+// -----------------------------------------------------------------------------
+// HOME SCREEN WITH ANIMATIONS & STATE
+// -----------------------------------------------------------------------------
+
+class SupplierDashboardHome extends StatefulWidget {
   const SupplierDashboardHome({super.key});
 
   @override
+  State<SupplierDashboardHome> createState() => _SupplierDashboardHomeState();
+}
+
+class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
+  bool _isLoading = true;
+  bool _hasError = false;
+  Map<String, dynamic>? _data;
+
+  // Mock Categories loading
+  List<Map<String, dynamic>> _categories = [];
+  bool _isCategoriesLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAllData();
+  }
+
+  Future<void> _loadAllData() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    try {
+      // Parallel fetching
+      final statsFuture = SalesStatsService().fetchSalesStats();
+      final categoryFuture = _fetchCategories();
+
+      final results = await Future.wait([statsFuture, categoryFuture]);
+      
+      if (mounted) {
+        setState(() {
+          _data = results[0] as Map<String, dynamic>;
+          // _categories is already set by _fetchCategories internally or we can assign here
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchCategories() async {
+    // Simulate API delay
+    await Future.delayed(const Duration(milliseconds: 1200));
+    if (mounted) {
+      setState(() {
+        _categories = [
+          {
+            'icon': Icons.inventory,
+            'name': 'Inventory',
+            'page': const MyProductsPage(),
+            'color': Colors.blue,
+          },
+          {
+            'icon': Icons.shopping_bag,
+            'name': 'Orders',
+            'page': const SupplierOrdersPage(),
+            'color': Colors.orange,
+          },
+          {
+            'icon': Icons.analytics,
+            'name': 'Analytics',
+            'page': const SalesAnalyticsPage(),
+            'color': Colors.purple,
+          },
+          {
+            'icon': Icons.campaign,
+            'name': 'Banners',
+            'page': const ManageBannersScreen(),
+            'color': Colors.red,
+          },
+          {
+            'icon': Icons.account_balance_wallet,
+            'name': 'Payouts',
+            'page': const SupplierPayoutPage(),
+            'color': Colors.green,
+          },
+        ];
+        _isCategoriesLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 20),
-          _buildTopBar(context),
-          const SizedBox(height: 20),
-          _buildPromoBanner(),
-          const SizedBox(height: 30),
-          _buildSectionHeader(context, "Categories"),
-          const SizedBox(height: 15),
-          _buildCategoryList(context),
-          const SizedBox(height: 30),
-          _buildSectionHeader(context, "Performance Stats"),
-          const SizedBox(height: 15),
-          _buildPerformanceGrid(context),
-          const SizedBox(height: 100),
-        ],
+    // If error, show retry
+    if (_hasError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            const Text("Failed to load dashboard data"),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadAllData,
+              child: const Text("Retry"),
+            )
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadAllData,
+      color: const Color(0xFF4CA6A8),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 20),
+            _buildTopBar(context),
+            const SizedBox(height: 20),
+            _buildPromoBanner(context),
+            const SizedBox(height: 30),
+            _buildSectionHeader(context, "Categories"),
+            const SizedBox(height: 15),
+            _buildCategoryList(context),
+            const SizedBox(height: 30),
+            _buildSectionHeader(context, "Performance Stats"),
+            const SizedBox(height: 15),
+            _buildPerformanceGrid(context),
+            const SizedBox(height: 100),
+          ],
+        ),
       ),
     );
   }
@@ -130,6 +273,13 @@ class SupplierDashboardHome extends StatelessWidget {
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                 BoxShadow(
+                   color: Colors.black.withValues(alpha: 0.05),
+                   blurRadius: 10,
+                   offset: const Offset(0, 4),
+                 ),
+              ],
             ),
             child: Icon(
               Icons.person_outline,
@@ -138,13 +288,19 @@ class SupplierDashboardHome extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 15),
-
         Expanded(
           child: Container(
             height: 50,
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                 BoxShadow(
+                   color: Colors.black.withValues(alpha: 0.05),
+                   blurRadius: 10,
+                   offset: const Offset(0, 4),
+                 ),
+              ],
             ),
             child: const TextField(
               decoration: InputDecoration(
@@ -156,10 +312,7 @@ class SupplierDashboardHome extends StatelessWidget {
             ),
           ),
         ),
-
         const SizedBox(width: 15),
-
-        // Theme Toggle (Replaced Cart)
         Consumer<ThemeProvider>(
           builder: (context, themeProvider, child) {
             return GestureDetector(
@@ -171,6 +324,13 @@ class SupplierDashboardHome extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardColor,
                   shape: BoxShape.circle,
+                  boxShadow: [
+                     BoxShadow(
+                       color: Colors.black.withValues(alpha: 0.05),
+                       blurRadius: 10,
+                       offset: const Offset(0, 4),
+                     ),
+                  ],
                 ),
                 child: Icon(
                   themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
@@ -184,97 +344,26 @@ class SupplierDashboardHome extends StatelessWidget {
     );
   }
 
-  Widget _buildPromoBanner() {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: SalesStatsService().fetchSalesStats(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildBannerContainer(
-            child: const Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            ),
-          );
-        }
+  Widget _buildPromoBanner(BuildContext context) {
+    if (_isLoading) {
+      return ShimmerWidget.rectangular(height: 180, borderRadius: 30);
+    }
 
-        // Default values if error or empty
-        final growth = snapshot.data?['growth'] ?? 0.0;
-        final revenue = snapshot.data?['totalRevenue'] ?? 0.0;
+    final double growth = _data?['growth'] ?? 0.0;
+    final double revenue = (_data?['totalRevenue'] as num?)?.toDouble() ?? 0.0;
+    
+    // Determine growth color
+    Color growthColor = Colors.white;
+    IconData growthIcon = Icons.trending_flat;
+    
+    if (growth > 0) {
+      growthColor = Colors.greenAccent;
+      growthIcon = Icons.trending_up;
+    } else if (growth < 0) {
+      growthColor = const Color(0xFFFF8A80); // Lighter red (RedAccent.100 equivalent) for better contrast on teal
+      growthIcon = Icons.trending_down;
+    }
 
-        return _buildBannerContainer(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Supplier Growth",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.trending_up,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          "+$growth%",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Total Revenue: ₹${revenue.toStringAsFixed(2)}",
-                style: const TextStyle(color: Colors.white70),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SalesAnalyticsPage(),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF4CA6A8),
-                  shape: const StadiumBorder(),
-                  elevation: 0,
-                ),
-                child: const Text("View Report"),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildBannerContainer({required Widget child}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -293,7 +382,83 @@ class SupplierDashboardHome extends StatelessWidget {
           ),
         ],
       ),
-      child: child,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Supplier Growth",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Icon(growthIcon, color: growthColor, size: 16),
+                    const SizedBox(width: 4),
+                    TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 0, end: growth),
+                      duration: const Duration(seconds: 2),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, val, child) {
+                        return Text(
+                          "${val > 0 ? '+' : ''}${val.toStringAsFixed(1)}%",
+                          style: TextStyle(
+                            color: growthColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text( "Total Revenue", style: TextStyle(color: Colors.white70, fontSize: 13) ),
+          const SizedBox(height: 4),
+          // Animated Revenue
+          AnimatedCurrencyCounter(
+            value: revenue, 
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SalesAnalyticsPage(),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF4CA6A8),
+              shape: const StadiumBorder(),
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text("View Report", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -309,11 +474,17 @@ class SupplierDashboardHome extends StatelessWidget {
             color: Theme.of(context).textTheme.titleLarge?.color,
           ),
         ),
-        const Text(
-          "See All",
-          style: TextStyle(
-            color: Color(0xFF4CA6A8),
-            fontWeight: FontWeight.w600,
+        InkWell(
+          onTap: () {}, // Optional: Navigate to a full list page
+          child: const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Text(
+              "See All",
+              style: TextStyle(
+                color: Color(0xFF4CA6A8),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ),
       ],
@@ -321,100 +492,37 @@ class SupplierDashboardHome extends StatelessWidget {
   }
 
   Widget _buildCategoryList(BuildContext context) {
-    final List<Map<String, dynamic>> cats = [
-      {
-        'icon': Icons.inventory,
-        'name': 'Inventory',
-        'page': const MyProductsPage(),
-      },
-      {
-        'icon': Icons.shopping_bag,
-        'name': 'Orders',
-        'page': const SupplierOrdersPage(),
-      },
-      {
-        'icon': Icons.analytics,
-        'name': 'Analytics',
-        'page': const SalesAnalyticsPage(),
-      },
-      {
-        'icon': Icons.campaign,
-        'name': 'Banners',
-        'page': const ManageBannersScreen(),
-      },
-      {
-        'icon': Icons.account_balance_wallet,
-        'name': 'Payouts',
-        'page': const SupplierPayoutPage(),
-      },
-    ];
+    if (_isCategoriesLoading) {
+      return SizedBox(
+        height: 110,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: 4,
+          separatorBuilder: (_, _) => const SizedBox(width: 25),
+          itemBuilder: (context, index) => const ShimmerWidget.circular(size: 70),
+        ),
+      );
+    }
 
     return SizedBox(
-      height: 95,
+      height: 110,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: cats.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 25),
+        itemCount: _categories.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 20),
         itemBuilder: (context, index) {
-          final label = cats[index]['label'];
-
-          return InkWell(
-            borderRadius: BorderRadius.circular(50),
-            onTap: () {
-              //  NAVIGATION LOGIC
-              if (label == "Banners") {
+          final cat = _categories[index];
+          return FadeInAnimation(
+            delay: index * 100, // Staggered animation
+            child: _CategoryItem(
+              icon: cat['icon'],
+              label: cat['name'],
+              onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const ManageBannersScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => cat['page']),
                 );
-              } else if (label == "Orders") {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const OrdersPage()),
-                );
-              } else if (label == "Clients") {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ChatListScreen()),
-                );
-              } else if (label == "Payouts") {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SupplierPayoutPage()),
-                );
-              } else if (label == "Sales") {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SalesAnalyticsPage()),
-                );
-              }
-            },
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    cats[index]['icon'],
-                    color: const Color(0xFF4CA6A8),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Theme.of(context).textTheme.bodyMedium?.color,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+              },
             ),
           );
         },
@@ -423,82 +531,408 @@ class SupplierDashboardHome extends StatelessWidget {
   }
 
   Widget _buildPerformanceGrid(BuildContext context) {
+    if (_isLoading) {
+      return GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 2,
+        crossAxisSpacing: 15,
+        mainAxisSpacing: 15,
+        childAspectRatio: 0.85,
+        children: const [
+          ShimmerWidget.rectangular(height: 150),
+          ShimmerWidget.rectangular(height: 150),
+        ],
+      );
+    }
+
+    // Prepare data
+    final revenue = (_data?['totalRevenue'] as num?)?.toDouble() ?? 0.0;
+    final pending = _data?['pendingOrders'] ?? 0;
+    
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
       crossAxisSpacing: 15,
       mainAxisSpacing: 15,
-      childAspectRatio: 0.80,
+      childAspectRatio: 0.85,
       children: [
-        _statItem(context, "Revenue", "₹ 4.5L", "Supplements", "+12%"),
-        _statItem(context, "Pending", "14 Units", "Medicine", "Alert"),
+        _StatCard(
+          title: "Revenue",
+          valueWidget: AnimatedCurrencyCounter(
+             value: revenue, 
+             style: const TextStyle(
+                color: Color(0xFF4CA6A8),
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+             ),
+             compact: true, // Use K/L/M format if huge
+          ),
+          subtitle: "Total Sales",
+          badge: "+12%", // In real app, calculate this
+          icon: Icons.attach_money,
+          isAlert: false,
+        ),
+        _StatCard(
+          title: "Pending",
+          valueWidget: Text(
+            "$pending Units",
+            style: const TextStyle(
+              color: Color(0xFF4CA6A8),
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          subtitle: "To Process",
+          badge: pending > 0 ? "Action Needed" : "All Good",
+          icon: Icons.schedule,
+          isAlert: pending > 0,
+        ),
       ],
     );
   }
+}
 
-  Widget _statItem(
-    BuildContext context,
-    String title,
-    String value,
-    String sub,
-    String badge,
-  ) {
+// -----------------------------------------------------------------------------
+// HELPER WIDGETS
+// -----------------------------------------------------------------------------
+
+class _CategoryItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _CategoryItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Icon(
+              icon,
+              color: const Color(0xFF4CA6A8),
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final String title;
+  final Widget valueWidget;
+  final String subtitle;
+  final String badge;
+  final IconData icon;
+  final bool isAlert;
+
+  const _StatCard({
+    required this.title,
+    required this.valueWidget,
+    required this.subtitle,
+    required this.badge,
+    required this.icon,
+    required this.isAlert,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+             color: Colors.black.withValues(alpha: 0.04),
+             blurRadius: 10,
+             offset: const Offset(0, 4),
+           ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            height: 55,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const Icon(Icons.bar_chart, color: Colors.grey, size: 40),
-          ),
-          const SizedBox(height: 10),
-          Text(sub, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-          Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const Spacer(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  color: Color(0xFF4CA6A8),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+               Container(
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4CA6A8).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  badge,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Color(0xFF4CA6A8),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: Icon(icon, color: Colors.grey, size: 24),
               ),
+              if (isAlert)
+                TwinklingAlertBadge(label: badge)
+              else
+                 Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4CA6A8).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      badge,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFF4CA6A8),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                 ),
             ],
           ),
+          
+          const Spacer(),
+          Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.bold, 
+              fontSize: 16,
+              color: Theme.of(context).textTheme.titleMedium?.color
+            ),
+          ),
+          const SizedBox(height: 8),
+          valueWidget,
         ],
       ),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// ANIMATION WIDGETS
+// -----------------------------------------------------------------------------
+
+class ShimmerWidget extends StatefulWidget {
+  final double width;
+  final double height;
+  final ShapeBorder shape;
+
+  const ShimmerWidget.rectangular({
+    super.key,
+    this.width = double.infinity,
+    required this.height,
+    double borderRadius = 15,
+  }) : shape = const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(15)));
+
+  const ShimmerWidget.circular({
+    super.key,
+    required double size,
+  }) : width = size, height = size, shape = const CircleBorder();
+
+  @override
+  State<ShimmerWidget> createState() => _ShimmerWidgetState();
+}
+
+class _ShimmerWidgetState extends State<ShimmerWidget> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat();
+    _animation = Tween<double>(begin: -1.0, end: 2.0).animate(CurvedAnimation(parent: _controller, curve: Curves.linear));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: ShapeDecoration(
+            shape: widget.shape,
+            gradient: LinearGradient(
+              begin: Alignment(_animation.value - 1, 0),
+              end: Alignment(_animation.value, 0),
+              colors: [baseColor, highlightColor, baseColor],
+              stops: const [0.1, 0.5, 0.9],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+
+class AnimatedCurrencyCounter extends StatelessWidget {
+  final double value;
+  final TextStyle style;
+  final bool compact;
+
+  const AnimatedCurrencyCounter({
+    super.key, 
+    required this.value, 
+    required this.style,
+    this.compact = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: value),
+      duration: const Duration(milliseconds: 1500),
+      curve: Curves.easeOutExpo,
+      builder: (context, val, child) {
+        final formatter = NumberFormat.currency(
+          locale: 'en_IN', 
+          symbol: '₹', 
+          decimalDigits: val >= 1000 ? 0 : 2
+        );
+        return Text(formatter.format(val), style: style);
+      },
+    );
+  }
+}
+
+class FadeInAnimation extends StatefulWidget {
+  final Widget child;
+  final int delay;
+
+  const FadeInAnimation({super.key, required this.child, this.delay = 0});
+
+  @override
+  State<FadeInAnimation> createState() => _FadeInAnimationState();
+}
+
+class _FadeInAnimationState extends State<FadeInAnimation> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+  late Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+    _opacity = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _slide = Tween<Offset>(begin: const Offset(0.2, 0), end: Offset.zero).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    
+    Future.delayed(Duration(milliseconds: widget.delay), () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: SlideTransition(
+        position: _slide,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+class TwinklingAlertBadge extends StatefulWidget {
+  final String label;
+  const TwinklingAlertBadge({super.key, required this.label});
+
+  @override
+  State<TwinklingAlertBadge> createState() => _TwinklingAlertBadgeState();
+}
+
+class _TwinklingAlertBadgeState extends State<TwinklingAlertBadge> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Color?> _colorAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))..repeat(reverse: true);
+    _colorAnimation = ColorTween(
+      begin: Colors.red.withValues(alpha: 0.1), 
+      end: Colors.red.withValues(alpha: 0.4)
+    ).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _colorAnimation,
+      builder: (context, child) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: _colorAnimation.value,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.red.withValues(alpha: 0.5), width: 0.5),
+          ),
+          child: Text(
+            widget.label,
+            style: const TextStyle(
+              fontSize: 10,
+              color: Colors.red,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+      },
     );
   }
 }
