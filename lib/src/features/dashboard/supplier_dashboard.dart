@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -6,8 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 
 // Internal Imports
-import '../orders/orders_page.dart';
-import '../profile/presentation/screens/chat_list_screen.dart';
 import '../profile/presentation/screens/supplier_category_page.dart';
 import '../profile/presentation/screens/supplier_payout_page.dart';
 import '../banners/screens/manage_banners_screen.dart';
@@ -88,11 +85,11 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black26, 
-                    blurRadius: 8, 
-                    offset: Offset(0, 4)
-                  )
-                ]
+                    color: Colors.black26,
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
+                  ),
+                ],
               ),
               child: const Icon(Icons.add, color: Colors.white, size: 24),
             ),
@@ -143,7 +140,10 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
     super.initState();
     _loadAllData();
     // ⏲️ Set up a periodic refresh for backup (in case real-time fails)
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) => _loadAllData());
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _loadAllData(),
+    );
   }
 
   @override
@@ -169,13 +169,13 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
       final categoryFuture = _fetchCategories();
 
       final results = await Future.wait([statsFuture, categoryFuture]);
-      
+
       if (mounted) {
         setState(() {
           _data = results[0] as Map<String, dynamic>;
           _isLoading = false;
         });
-        
+
         // Set up real-time subscription after first load
         if (_statsSubscription == null && _data != null) {
           await _setupRealtimeSubscription();
@@ -190,34 +190,37 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
       }
     }
   }
-  
+
   /// Set up real-time subscription to database changes
   Future<void> _setupRealtimeSubscription() async {
     try {
       // Get supplier info from Supabase
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
-      
+
       final supplierData = await Supabase.instance.client
           .from('suppliers')
           .select('supplier_code, id')
           .eq('user_id', user.id)
           .maybeSingle();
-      
+
       if (supplierData != null) {
         _supplierCode = supplierData['supplier_code'];
         _supplierId = supplierData['id'];
-        
+
         // Subscribe to real-time updates
-        await _statsService.subscribeToRealtimeUpdates(_supplierCode!, _supplierId!);
-        
+        await _statsService.subscribeToRealtimeUpdates(
+          _supplierCode!,
+          _supplierId!,
+        );
+
         // Listen to the stats stream
         _statsSubscription = _statsService.statsStream.listen((newStats) {
           if (mounted) {
             setState(() {
               _data = newStats;
             });
-            
+
             // Show a subtle notification that data updated
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -239,7 +242,7 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
             );
           }
         });
-        
+
         print('✅ Real-time dashboard updates enabled!');
       }
     } catch (e) {
@@ -301,10 +304,7 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
             const SizedBox(height: 16),
             const Text("Failed to load dashboard data"),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadAllData,
-              child: const Text("Retry"),
-            )
+            ElevatedButton(onPressed: _loadAllData, child: const Text("Retry")),
           ],
         ),
       );
@@ -354,11 +354,11 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(15),
               boxShadow: [
-                 BoxShadow(
-                   color: Colors.black.withValues(alpha: 0.05),
-                   blurRadius: 10,
-                   offset: const Offset(0, 4),
-                 ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
               ],
             ),
             child: Icon(
@@ -375,11 +375,11 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(25),
               boxShadow: [
-                 BoxShadow(
-                   color: Colors.black.withValues(alpha: 0.05),
-                   blurRadius: 10,
-                   offset: const Offset(0, 4),
-                 ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
               ],
             ),
             child: const TextField(
@@ -405,11 +405,11 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
                   color: Theme.of(context).cardColor,
                   shape: BoxShape.circle,
                   boxShadow: [
-                     BoxShadow(
-                       color: Colors.black.withValues(alpha: 0.05),
-                       blurRadius: 10,
-                       offset: const Offset(0, 4),
-                     ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
                   ],
                 ),
                 child: Icon(
@@ -431,16 +431,18 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
 
     final double growth = _data?['growth'] ?? 0.0;
     final double revenue = (_data?['totalRevenue'] as num?)?.toDouble() ?? 0.0;
-    
+
     // Determine growth color
     Color growthColor = Colors.white;
     IconData growthIcon = Icons.trending_flat;
-    
+
     if (growth > 0) {
       growthColor = Colors.greenAccent;
       growthIcon = Icons.trending_up;
     } else if (growth < 0) {
-      growthColor = const Color(0xFFFF8A80); // Lighter red (RedAccent.100 equivalent) for better contrast on teal
+      growthColor = const Color(
+        0xFFFF8A80,
+      ); // Lighter red (RedAccent.100 equivalent) for better contrast on teal
       growthIcon = Icons.trending_down;
     }
 
@@ -506,11 +508,14 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
             ],
           ),
           const SizedBox(height: 12),
-          const Text( "Total Revenue", style: TextStyle(color: Colors.white70, fontSize: 13) ),
+          const Text(
+            "Total Revenue",
+            style: TextStyle(color: Colors.white70, fontSize: 13),
+          ),
           const SizedBox(height: 4),
           // Animated Revenue
           AnimatedCurrencyCounter(
-            value: revenue, 
+            value: revenue,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
@@ -523,9 +528,7 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const SalesAnalyticsPage(),
-                ),
+                MaterialPageRoute(builder: (_) => const SalesAnalyticsPage()),
               );
             },
             style: ElevatedButton.styleFrom(
@@ -535,7 +538,10 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: const Text("View Report", style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              "View Report",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -579,7 +585,8 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
           scrollDirection: Axis.horizontal,
           itemCount: 4,
           separatorBuilder: (_, _) => const SizedBox(width: 25),
-          itemBuilder: (context, index) => const ShimmerWidget.circular(size: 70),
+          itemBuilder: (context, index) =>
+              const ShimmerWidget.circular(size: 70),
         ),
       );
     }
@@ -629,27 +636,23 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
     }
 
     // Extract all metrics from data
-    final totalRevenue = (_data?['totalRevenue'] as num?)?.toDouble() ?? 0.0;
-    final thisMonthRevenue = (_data?['thisMonthRevenue'] as num?)?.toDouble() ?? 0.0;
-    final todayRevenue = (_data?['todayRevenue'] as num?)?.toDouble() ?? 0.0;
+    final thisMonthRevenue =
+        (_data?['thisMonthRevenue'] as num?)?.toDouble() ?? 0.0;
     final growth = (_data?['growth'] as num?)?.toDouble() ?? 0.0;
     final pending = (_data?['pendingOrders'] as num?)?.toInt() ?? 0;
-    final confirmed = (_data?['confirmedOrders'] as num?)?.toInt() ?? 0;
-    final shipped = (_data?['shippedOrders'] as num?)?.toInt() ?? 0;
     final delivered = (_data?['deliveredOrders'] as num?)?.toInt() ?? 0;
     final totalOrders = (_data?['totalOrders'] as num?)?.toInt() ?? 0;
     final totalClients = (_data?['totalClients'] as num?)?.toInt() ?? 0;
     final totalProducts = (_data?['totalProducts'] as num?)?.toInt() ?? 0;
-    final totalStock = (_data?['totalStock'] as num?)?.toInt() ?? 0;
     final lowStockCount = (_data?['lowStockCount'] as num?)?.toInt() ?? 0;
     final outOfStockCount = (_data?['outOfStockCount'] as num?)?.toInt() ?? 0;
     final avgOrderValue = (_data?['avgOrderValue'] as num?)?.toDouble() ?? 0.0;
-    
+
     // Calculate fulfillment rate
-    final fulfillmentRate = totalOrders > 0 
-        ? ((delivered / totalOrders) * 100).toStringAsFixed(0) 
+    final fulfillmentRate = totalOrders > 0
+        ? ((delivered / totalOrders) * 100).toStringAsFixed(0)
         : "0";
-    
+
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -662,20 +665,20 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
         _StatCard(
           title: "Revenue",
           valueWidget: AnimatedCurrencyCounter(
-             value: thisMonthRevenue, 
-             style: const TextStyle(
-                color: Color(0xFF4CA6A8),
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-             ),
-             compact: true,
+            value: thisMonthRevenue,
+            style: const TextStyle(
+              color: Color(0xFF4CA6A8),
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+            compact: true,
           ),
           subtitle: "This Month",
           badge: "${growth >= 0 ? '+' : ''}${growth.toStringAsFixed(1)}%",
           icon: Icons.attach_money,
           isAlert: false,
         ),
-        
+
         // Pending Orders Card
         _StatCard(
           title: "Pending",
@@ -692,7 +695,7 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
           icon: Icons.schedule,
           isAlert: pending > 0,
         ),
-        
+
         // Inventory Alert Card
         _StatCard(
           title: "Inventory",
@@ -705,13 +708,13 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
             ),
           ),
           subtitle: "Total Products",
-          badge: lowStockCount > 0 || outOfStockCount > 0 
-              ? "${lowStockCount + outOfStockCount} Low Stock" 
+          badge: lowStockCount > 0 || outOfStockCount > 0
+              ? "${lowStockCount + outOfStockCount} Low Stock"
               : "Stock OK",
           icon: Icons.inventory_2,
           isAlert: lowStockCount > 0 || outOfStockCount > 0,
         ),
-        
+
         // Customers Card
         _StatCard(
           title: "Customers",
@@ -728,7 +731,7 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
           icon: Icons.people,
           isAlert: false,
         ),
-        
+
         // Order Fulfillment Card
         _StatCard(
           title: "Fulfillment",
@@ -745,18 +748,18 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
           icon: Icons.local_shipping,
           isAlert: false,
         ),
-        
+
         // Average Order Value Card
         _StatCard(
           title: "Avg Order",
           valueWidget: AnimatedCurrencyCounter(
-             value: avgOrderValue, 
-             style: const TextStyle(
-                color: Color(0xFF4CA6A8),
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-             ),
-             compact: true,
+            value: avgOrderValue,
+            style: const TextStyle(
+              color: Color(0xFF4CA6A8),
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+            compact: true,
           ),
           subtitle: "Per Transaction",
           badge: totalOrders > 0 ? "$totalOrders Total" : "No Data",
@@ -804,11 +807,7 @@ class _CategoryItem extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF4CA6A8),
-              size: 28,
-            ),
+            child: Icon(icon, color: const Color(0xFF4CA6A8), size: 28),
           ),
           const SizedBox(height: 10),
           Text(
@@ -851,10 +850,10 @@ class _StatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-             color: Colors.black.withValues(alpha: 0.04),
-             blurRadius: 10,
-             offset: const Offset(0, 4),
-           ),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -864,7 +863,7 @@ class _StatCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-               Container(
+              Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Theme.of(context).scaffoldBackgroundColor,
@@ -875,33 +874,39 @@ class _StatCard extends StatelessWidget {
               if (isAlert)
                 TwinklingAlertBadge(label: badge)
               else
-                 Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF4CA6A8).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CA6A8).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    badge,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFF4CA6A8),
+                      fontWeight: FontWeight.bold,
                     ),
-                    child: Text(
-                      badge,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Color(0xFF4CA6A8),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                 ),
+                  ),
+                ),
             ],
           ),
-          
+
           const Spacer(),
-          Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          Text(
+            subtitle,
+            style: const TextStyle(color: Colors.grey, fontSize: 12),
+          ),
           const SizedBox(height: 4),
           Text(
             title,
             style: TextStyle(
-              fontWeight: FontWeight.bold, 
+              fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: Theme.of(context).textTheme.titleMedium?.color
+              color: Theme.of(context).textTheme.titleMedium?.color,
             ),
           ),
           const SizedBox(height: 8),
@@ -926,26 +931,35 @@ class ShimmerWidget extends StatefulWidget {
     this.width = double.infinity,
     required this.height,
     double borderRadius = 15,
-  }) : shape = const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(15)));
+  }) : shape = const RoundedRectangleBorder(
+         borderRadius: BorderRadius.all(Radius.circular(15)),
+       );
 
-  const ShimmerWidget.circular({
-    super.key,
-    required double size,
-  }) : width = size, height = size, shape = const CircleBorder();
+  const ShimmerWidget.circular({super.key, required double size})
+    : width = size,
+      height = size,
+      shape = const CircleBorder();
 
   @override
   State<ShimmerWidget> createState() => _ShimmerWidgetState();
 }
 
-class _ShimmerWidgetState extends State<ShimmerWidget> with SingleTickerProviderStateMixin {
+class _ShimmerWidgetState extends State<ShimmerWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat();
-    _animation = Tween<double>(begin: -1.0, end: 2.0).animate(CurvedAnimation(parent: _controller, curve: Curves.linear));
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+    _animation = Tween<double>(
+      begin: -1.0,
+      end: 2.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.linear));
   }
 
   @override
@@ -981,15 +995,14 @@ class _ShimmerWidgetState extends State<ShimmerWidget> with SingleTickerProvider
   }
 }
 
-
 class AnimatedCurrencyCounter extends StatelessWidget {
   final double value;
   final TextStyle style;
   final bool compact;
 
   const AnimatedCurrencyCounter({
-    super.key, 
-    required this.value, 
+    super.key,
+    required this.value,
     required this.style,
     this.compact = false,
   });
@@ -1002,9 +1015,9 @@ class AnimatedCurrencyCounter extends StatelessWidget {
       curve: Curves.easeOutExpo,
       builder: (context, val, child) {
         final formatter = NumberFormat.currency(
-          locale: 'en_IN', 
-          symbol: '₹', 
-          decimalDigits: val >= 1000 ? 0 : 2
+          locale: 'en_IN',
+          symbol: '₹',
+          decimalDigits: val >= 1000 ? 0 : 2,
         );
         return Text(formatter.format(val), style: style);
       },
@@ -1022,7 +1035,8 @@ class FadeInAnimation extends StatefulWidget {
   State<FadeInAnimation> createState() => _FadeInAnimationState();
 }
 
-class _FadeInAnimationState extends State<FadeInAnimation> with SingleTickerProviderStateMixin {
+class _FadeInAnimationState extends State<FadeInAnimation>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _opacity;
   late Animation<Offset> _slide;
@@ -1030,10 +1044,19 @@ class _FadeInAnimationState extends State<FadeInAnimation> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
-    _opacity = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _slide = Tween<Offset>(begin: const Offset(0.2, 0), end: Offset.zero).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _opacity = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _slide = Tween<Offset>(
+      begin: const Offset(0.2, 0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
     Future.delayed(Duration(milliseconds: widget.delay), () {
       if (mounted) _controller.forward();
     });
@@ -1049,10 +1072,7 @@ class _FadeInAnimationState extends State<FadeInAnimation> with SingleTickerProv
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _opacity,
-      child: SlideTransition(
-        position: _slide,
-        child: widget.child,
-      ),
+      child: SlideTransition(position: _slide, child: widget.child),
     );
   }
 }
@@ -1065,17 +1085,21 @@ class TwinklingAlertBadge extends StatefulWidget {
   State<TwinklingAlertBadge> createState() => _TwinklingAlertBadgeState();
 }
 
-class _TwinklingAlertBadgeState extends State<TwinklingAlertBadge> with SingleTickerProviderStateMixin {
+class _TwinklingAlertBadgeState extends State<TwinklingAlertBadge>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Color?> _colorAnimation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))..repeat(reverse: true);
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
     _colorAnimation = ColorTween(
-      begin: Colors.red.withValues(alpha: 0.1), 
-      end: Colors.red.withValues(alpha: 0.4)
+      begin: Colors.red.withValues(alpha: 0.1),
+      end: Colors.red.withValues(alpha: 0.4),
     ).animate(_controller);
   }
 
@@ -1095,7 +1119,10 @@ class _TwinklingAlertBadgeState extends State<TwinklingAlertBadge> with SingleTi
           decoration: BoxDecoration(
             color: _colorAnimation.value,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.red.withValues(alpha: 0.5), width: 0.5),
+            border: Border.all(
+              color: Colors.red.withValues(alpha: 0.5),
+              width: 0.5,
+            ),
           ),
           child: Text(
             widget.label,

@@ -45,5 +45,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Environment files
 .env
 .env.*
+
+# Debug outputs and analysis files
+debug_outputs/
+*.txt
+*.log
