@@ -243,10 +243,10 @@ class _SupplierDashboardHomeState extends State<SupplierDashboardHome> {
           }
         });
 
-        print('✅ Real-time dashboard updates enabled!');
+        // Real-time dashboard updates enabled
       }
     } catch (e) {
-      print('❌ Error setting up real-time subscription: $e');
+      // Error setting up real-time subscription
     }
   }
 

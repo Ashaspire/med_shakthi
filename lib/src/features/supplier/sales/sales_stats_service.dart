@@ -3,20 +3,23 @@ import 'dart:async';
 
 class SalesStatsService {
   final SupabaseClient _supabase = Supabase.instance.client;
-  
+
   // Stream controller for real-time updates
   final _statsController = StreamController<Map<String, dynamic>>.broadcast();
-  
+
   // Subscription references
   RealtimeChannel? _ordersSubscription;
   RealtimeChannel? _productsSubscription;
   RealtimeChannel? _inventorySubscription;
-  
+
   /// Stream of real-time stats updates
   Stream<Map<String, dynamic>> get statsStream => _statsController.stream;
-  
+
   /// Subscribe to real-time database changes
-  Future<void> subscribeToRealtimeUpdates(String supplierCode, String supplierId) async {
+  Future<void> subscribeToRealtimeUpdates(
+    String supplierCode,
+    String supplierId,
+  ) async {
     try {
       // Subscribe to orders table changes
       _ordersSubscription = _supabase
@@ -31,14 +34,14 @@ class SalesStatsService {
               value: supplierCode,
             ),
             callback: (payload) async {
-              print('📦 Order change detected: ${payload.eventType}');
+              // Order change detected
               // Fetch fresh stats and emit to stream
               final stats = await fetchSalesStats();
               _statsController.add(stats);
             },
           )
           .subscribe();
-      
+
       // Subscribe to products table changes
       _productsSubscription = _supabase
           .channel('products_changes')
@@ -52,13 +55,13 @@ class SalesStatsService {
               value: supplierCode,
             ),
             callback: (payload) async {
-              print('📦 Product change detected: ${payload.eventType}');
+              // Product change detected
               final stats = await fetchSalesStats();
               _statsController.add(stats);
             },
           )
           .subscribe();
-      
+
       // Subscribe to inventory table changes
       _inventorySubscription = _supabase
           .channel('inventory_changes')
@@ -72,27 +75,27 @@ class SalesStatsService {
               value: supplierId,
             ),
             callback: (payload) async {
-              print('📦 Inventory change detected: ${payload.eventType}');
+              // Inventory change detected
               final stats = await fetchSalesStats();
               _statsController.add(stats);
             },
           )
           .subscribe();
-          
-      print('✅ Real-time subscriptions active for supplier: $supplierCode');
+
+      // Real-time subscriptions active
     } catch (e) {
-      print('❌ Error subscribing to real-time updates: $e');
+      // Error subscribing to real-time updates
     }
   }
-  
+
   /// Unsubscribe from real-time updates
   Future<void> unsubscribe() async {
     await _ordersSubscription?.unsubscribe();
     await _productsSubscription?.unsubscribe();
     await _inventorySubscription?.unsubscribe();
-    print('🔌 Unsubscribed from real-time updates');
+    // Unsubscribed from real-time updates
   }
-  
+
   /// Dispose resources
   void dispose() {
     _statsController.close();
@@ -104,7 +107,7 @@ class SalesStatsService {
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) {
-        print('❌ No user logged in');
+        // No user logged in
         return _getEmptyStats();
       }
 
@@ -116,53 +119,51 @@ class SalesStatsService {
           .maybeSingle();
 
       if (supplierData == null) {
-        print('❌ Supplier not found for user: ${user.id}');
+        // Supplier not found
         return _getEmptyStats();
       }
-      
+
       final String? supplierCode = supplierData['supplier_code'];
       final String? supplierId = supplierData['id'];
-      
+
       if (supplierCode == null || supplierCode.isEmpty) {
-        print('❌ Supplier code is null or empty');
+        // Supplier code is null or empty
         return _getEmptyStats();
       }
-      
+
       if (supplierId == null || supplierId.isEmpty) {
-        print('❌ Supplier ID is null or empty');
+        // Supplier ID is null or empty
         return _getEmptyStats();
       }
-      
-      print('✅ Fetching stats for supplier: $supplierCode');
-      
+
+      // Fetching stats for supplier
+
       // 2. Define Date Ranges
       final now = DateTime.now();
       final firstDayThisMonth = DateTime(now.year, now.month, 1);
       final firstDayLastMonth = DateTime(now.year, now.month - 1, 1);
       final today = DateTime(now.year, now.month, now.day);
-      
+
       // 3. Fetch Products Count and Inventory
       final productsResponse = await _supabase
           .from('products')
           .select('id, name, price, image_url, category')
           .eq('supplier_code', supplierCode);
-      
+
       final List<dynamic> productsList = productsResponse as List<dynamic>;
       final int totalProducts = productsList.length;
-      
-      print('📦 Found $totalProducts products');
-      
+
       // 4. Fetch Inventory Data
       final inventoryResponse = await _supabase
           .from('inventory')
           .select('product_id, stock_quantity')
           .eq('supplier_id', supplierId);
-      
+
       final List<dynamic> inventoryList = inventoryResponse as List<dynamic>;
       int lowStockCount = 0;
       int outOfStockCount = 0;
       int totalStock = 0;
-      
+
       for (var inv in inventoryList) {
         final int stock = (inv['stock_quantity'] as num?)?.toInt() ?? 0;
         totalStock += stock;
@@ -172,11 +173,13 @@ class SalesStatsService {
           lowStockCount++;
         }
       }
-      
+
       // 5. Fetch Orders Data
       final ordersResponse = await _supabase
           .from('orders')
-          .select('id, user_id, total_amount, status, created_at, product_id, quantity, price')
+          .select(
+            'id, user_id, total_amount, status, created_at, product_id, quantity, price',
+          )
           .eq('supplier_code', supplierCode);
 
       final List<dynamic> ordersList = ordersResponse as List<dynamic>;
@@ -194,14 +197,17 @@ class SalesStatsService {
       final Map<String, int> productSales = {};
 
       for (var order in ordersList) {
-        final double amount = (order['total_amount'] as num?)?.toDouble() ?? 
-                             ((order['price'] as num?)?.toDouble() ?? 0.0) * 
-                             ((order['quantity'] as num?)?.toInt() ?? 0);
-        final String status = (order['status'] ?? 'pending').toString().toLowerCase();
+        final double amount =
+            (order['total_amount'] as num?)?.toDouble() ??
+            ((order['price'] as num?)?.toDouble() ?? 0.0) *
+                ((order['quantity'] as num?)?.toInt() ?? 0);
+        final String status = (order['status'] ?? 'pending')
+            .toString()
+            .toLowerCase();
         final DateTime createdAt = DateTime.parse(order['created_at']);
         final String userId = order['user_id'] ?? '';
         final String productId = order['product_id'] ?? '';
-        
+
         totalRevenue += amount;
         if (userId.isNotEmpty) uniqueClients.add(userId);
 
@@ -230,10 +236,11 @@ class SalesStatsService {
         if (createdAt.isAfter(today)) {
           todayRevenue += amount;
         }
-        
+
         if (createdAt.isAfter(firstDayThisMonth)) {
           thisMonthRevenue += amount;
-        } else if (createdAt.isAfter(firstDayLastMonth) && createdAt.isBefore(firstDayThisMonth)) {
+        } else if (createdAt.isAfter(firstDayLastMonth) &&
+            createdAt.isBefore(firstDayThisMonth)) {
           lastMonthRevenue += amount;
         }
       }
@@ -241,13 +248,16 @@ class SalesStatsService {
       // 6. Calculate Growth Percentage
       double growth = 0;
       if (lastMonthRevenue > 0) {
-        growth = ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
+        growth =
+            ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
       } else if (thisMonthRevenue > 0) {
         growth = 100.0;
       }
 
       // 7. Calculate Average Order Value
-      double avgOrderValue = totalOrdersCount > 0 ? totalRevenue / totalOrdersCount : 0;
+      double avgOrderValue = totalOrdersCount > 0
+          ? totalRevenue / totalOrdersCount
+          : 0;
 
       // 8. Monthly Payout (92% after platform fees)
       double monthlyPayout = thisMonthRevenue * 0.92;
@@ -257,7 +267,7 @@ class SalesStatsService {
       if (productSales.isNotEmpty) {
         final sortedProducts = productSales.entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
-        
+
         for (var entry in sortedProducts.take(3)) {
           final product = productsList.firstWhere(
             (p) => p['id'] == entry.key,
@@ -283,29 +293,29 @@ class SalesStatsService {
         'growth': growth,
         'monthlyPayout': monthlyPayout,
         'avgOrderValue': avgOrderValue,
-        
+
         // Order Metrics
         'totalOrders': totalOrdersCount,
         'pendingOrders': pendingOrders,
         'confirmedOrders': confirmedOrders,
         'shippedOrders': shippedOrders,
         'deliveredOrders': deliveredOrders,
-        
+
         // Customer Metrics
         'totalClients': uniqueClients.length,
-        
+
         // Product & Inventory Metrics
         'totalProducts': totalProducts,
         'totalStock': totalStock,
         'lowStockCount': lowStockCount,
         'outOfStockCount': outOfStockCount,
         'topProducts': topProducts,
-        
+
         // Metadata
         'updatedAt': DateTime.now().toIso8601String(),
       };
     } catch (e) {
-      print("Error in fetchSalesStats: $e");
+      // Error in fetchSalesStats
       return _getEmptyStats();
     }
   }
