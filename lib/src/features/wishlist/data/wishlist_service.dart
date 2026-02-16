@@ -14,7 +14,7 @@ class WishlistService extends ChangeNotifier {
   List<WishlistItem> get wishlist => List.unmodifiable(_wishlist);
 
   WishlistService({String? userId}) {
-    _init(); // Load local immediate
+    _init(); // Load local immediately
     _listenToAuthChanges();
   }
 
@@ -27,14 +27,48 @@ class WishlistService extends ChangeNotifier {
   }
 
   void _listenToAuthChanges() {
-    _authSubscription = _supabase.auth.onAuthStateChange.listen((data) {
+    _authSubscription = _supabase.auth.onAuthStateChange.listen((data) async {
       final AuthChangeEvent event = data.event;
       if (event == AuthChangeEvent.signedIn) {
-        _syncWithRemote(data.session?.user);
+        final user = data.session?.user;
+        if (user != null) {
+          await _mergeGuestWishlist(user);
+          _syncWithRemote(user);
+        }
       } else if (event == AuthChangeEvent.signedOut) {
         _clearStateOnLogout();
       }
     });
+  }
+
+  /// 🔄 Merge Guest Items to User Account
+  Future<void> _mergeGuestWishlist(User user) async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String>? guestList = prefs.getStringList('local_wishlist');
+
+    if (guestList != null && guestList.isNotEmpty) {
+      final List<WishlistItem> guestItems = guestList.map((jsonStr) {
+        return WishlistItem.fromMap(jsonDecode(jsonStr));
+      }).toList();
+
+      if (kDebugMode) {
+        print("Merging ${guestItems.length} guest items to user ${user.id}");
+      }
+
+      // Upload each to Supabase
+      for (final item in guestItems) {
+        try {
+          await _supabase
+              .from('wishlist')
+              .upsert(item.toMap(user.id), onConflict: 'user_id, product_id');
+        } catch (e) {
+          if (kDebugMode) print("Values merge failed for ${item.id}: $e");
+        }
+      }
+
+      // Clear guest list after successful merge attempt
+      await prefs.remove('local_wishlist');
+    }
   }
 
   void _clearStateOnLogout() {
@@ -56,45 +90,37 @@ class WishlistService extends ChangeNotifier {
     return _wishlist.any((item) => item.id == productId);
   }
 
-  /// 🔄 Real-time Sync with Supabase (Like CartData)
+  /// 🔄 Real-time Sync with Supabase
   void _syncWithRemote(User? user) {
     if (user == null) return;
 
+    // Cancel existing subscription to avoid duplicates
     _wishlistStreamSubscription?.cancel();
+
     _wishlistStreamSubscription = _supabase
         .from('wishlist')
         .stream(primaryKey: ['id'])
-        .eq('user_id', user.id)
+        .eq('user_id', user.id) // Strict user filter like Cart
         .listen(
           (List<Map<String, dynamic>> data) async {
-            // Fetch full product details for these items to get images/names
-            // Stream only gives us the wishlist row. We might need a separate fetch or join?
-            // Supabase stream does NOT support joins directly.
-            // We have two options:
-            // 1. Fetch details for each item.
-            // 2. Use the stream for IDs, then fetch details.
-
-            // BETTER APPROACH for Stream + Join:
-            // Supabase Flutter SDK streams don't support deep joins easily in one go.
-            // However, we can just use the product_id to fetch details or trust local if we have it.
-            // But to ensure Freshness, let's just use the FETCH approach (Polling) or Stream logic.
-
-            // Actually, CartData uses .stream(). Does it get joined data?
-            // CartData manually maps.
-            // Logic: On stream update, we get list of wishlist items.
-            // We can then enrich them.
-
-            if (data.isEmpty) {
-              _wishlist = [];
-              notifyListeners();
-              _saveToLocal();
-              return;
+            if (kDebugMode) {
+              print("Wishlist Stream Event: ${data.length} items");
             }
+
+            // 1. Immediate Update (Snapshot)
+            // Use the data directly from the wishlist table so user sees *something*
+            // even if product fetch fails.
+            _wishlist = data.map((e) => WishlistItem.fromMap(e)).toList();
+            notifyListeners();
+            _saveToLocal();
+
+            if (data.isEmpty) return;
 
             final productIds = data.map((e) => e['product_id']).toList();
 
             try {
-              // Bulk fetch product details
+              // 2. Background Refresh (Detailed Data)
+              // Fetch latest product details (price, image, supplier)
               final productsResponse = await _supabase
                   .from('products')
                   .select('*, suppliers(name, supplier_code, id)')
@@ -104,13 +130,11 @@ class WishlistService extends ChangeNotifier {
                   productsResponse as List<dynamic>;
               final productMap = {for (var p in productsData) p['id']: p};
 
+              // Re-map with enhanced product data
               _wishlist = data.map((wItem) {
                 final pId = wItem['product_id'];
-                final pData = productMap[pId]; // associated product
+                final pData = productMap[pId];
 
-                // Merge/Map
-                // We need to construct a map that WishlistItem.fromMap expects
-                // It expects 'products' key for joined data
                 final mapForModel = Map<String, dynamic>.from(wItem);
                 if (pData != null) {
                   mapForModel['products'] = pData;
@@ -118,11 +142,18 @@ class WishlistService extends ChangeNotifier {
                 return WishlistItem.fromMap(mapForModel);
               }).toList();
 
+              if (kDebugMode) {
+                print("Wishlist enhanced with product data");
+              }
+
               notifyListeners();
               _saveToLocal();
             } catch (e) {
-              if (kDebugMode)
-                print("Error fetching product details for wishlist: $e");
+              // If product fetch fails, we just log it.
+              // We DO NOT clear the list - we keep the snapshot from step 1.
+              if (kDebugMode) {
+                print("Error enhancing wishlist with product details: $e");
+              }
             }
           },
           onError: (error) {
@@ -153,7 +184,8 @@ class WishlistService extends ChangeNotifier {
             .from('wishlist')
             .upsert(
               item.toMap(user.id),
-              onConflict: 'user_id, product_id', // Prevent duplicates
+              onConflict:
+                  'user_id, product_id', // Ensures uniqueness based on user and product
             );
       } catch (e) {
         if (kDebugMode) print('Supabase add failed: $e');

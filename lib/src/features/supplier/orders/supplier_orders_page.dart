@@ -15,7 +15,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -34,8 +34,9 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           isScrollable: true,
           tabs: const [
             Tab(text: "Pending"),
-            Tab(text: "Accepted"),
-            Tab(text: "Dispatched"),
+            Tab(text: "Confirmed"),
+            Tab(text: "Shipped"),
+            Tab(text: "Delivered"),
             Tab(text: "Cancelled"),
           ],
         ),
@@ -44,9 +45,10 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         controller: _tabController,
         children: const [
           SupplierOrderList(status: "Pending"),
-          SupplierOrderList(status: "Accepted"),
-          SupplierOrderList(status: "Dispatched"),
-          SupplierOrderList(status: "Cancelled"), // Or Rejected
+          SupplierOrderList(status: "Confirmed"),
+          SupplierOrderList(status: "Shipped"), // Matches 'shipped' in DB
+          SupplierOrderList(status: "Delivered"),
+          SupplierOrderList(status: "Cancelled"),
         ],
       ),
     );
@@ -107,7 +109,7 @@ class _SupplierOrderListState extends State<SupplierOrderList> {
               shipping_address,
               created_at,
               user_id,
-              status
+              cancellation_reason
             )
           ''')
           .eq('supplier_id', supplierId)
@@ -149,10 +151,12 @@ class _SupplierOrderListState extends State<SupplierOrderList> {
     // Status is stored in the 'orders' table, not 'order_details'
 
     try {
-      await _supabase
-          .from('orders')
-          .update({'status': newStatus.toLowerCase()})
-          .eq('id', orderId);
+      final Map<String, dynamic> updates = {'status': newStatus.toLowerCase()};
+      if (reason != null && reason.isNotEmpty) {
+        updates['cancellation_reason'] = reason;
+      }
+
+      await _supabase.from('orders').update(updates).eq('id', orderId);
 
       _fetchOrders(); // Refresh list
       if (mounted) {
@@ -191,15 +195,18 @@ class _SupplierOrderListState extends State<SupplierOrderList> {
         return "Configuration error. Please contact support.";
       case '42703': // Undefined column
         return "Data structure error. Please contact support.";
+      case '42501': // RLS policy violation
+        return "You don't have permission to update this order.";
       case 'PGRST116': // No rows returned
         return "Order not found.";
       case '23503': // Foreign key violation
         return "Cannot update order. Related data missing.";
+      // Handle the check constraint specifically if needed, causing 23514
+      case '23514':
+        return "Invalid Status Update.";
       default:
         if (message.contains('JWT')) {
           return "Session expired. Please log in again.";
-        } else if (message.contains('permission')) {
-          return "You don't have permission to perform this action.";
         }
         return 'An error occurred: ${message.length > 50 ? message.substring(0, 50) : message}...';
     }
@@ -294,6 +301,7 @@ class _SupplierOrderListState extends State<SupplierOrderList> {
         final imageUrl = product['image_url'] ?? '';
         final shippingAddress = parentOrder['shipping_address'] ?? 'No address';
         final orderId = parentOrder['id'] ?? 'Unknown';
+        final cancellationReason = parentOrder['cancellation_reason'];
 
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
@@ -368,6 +376,39 @@ class _SupplierOrderListState extends State<SupplierOrderList> {
                     ),
                   ],
                 ),
+                if (widget.status == "Cancelled" &&
+                    cancellationReason != null) ...[
+                  const Divider(height: 24),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Cancellation Reason:",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          cancellationReason,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.red.shade900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const Divider(height: 24),
                 if (widget.status == "Pending")
                   Row(
@@ -384,7 +425,7 @@ class _SupplierOrderListState extends State<SupplierOrderList> {
                       const SizedBox(width: 12),
                       ElevatedButton(
                         onPressed: () =>
-                            _updateStatus(parentOrder['id'], "Accepted"),
+                            _updateStatus(parentOrder['id'], "Confirmed"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF4CA6A8),
                           foregroundColor: Colors.white,
@@ -393,17 +434,30 @@ class _SupplierOrderListState extends State<SupplierOrderList> {
                       ),
                     ],
                   ),
-                if (widget.status == "Accepted")
+                if (widget.status == "Confirmed")
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () =>
-                          _updateStatus(parentOrder['id'], "Dispatched"),
+                          _updateStatus(parentOrder['id'], "Shipped"),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6366F1),
                         foregroundColor: Colors.white,
                       ),
                       child: const Text("Dispatch Order"),
+                    ),
+                  ),
+                if (widget.status == "Shipped")
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          _updateStatus(parentOrder['id'], "Delivered"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text("Mark as Delivered"),
                     ),
                   ),
               ],

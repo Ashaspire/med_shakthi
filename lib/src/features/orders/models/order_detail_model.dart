@@ -12,6 +12,8 @@ class OrderDetailModel {
   final String? supplierName;
   final String? supplierCode;
   final String? supplierId;
+  final String? supplierEmail;
+  final String? supplierPhone;
 
   OrderDetailModel({
     required this.id,
@@ -27,6 +29,8 @@ class OrderDetailModel {
     this.supplierName,
     this.supplierCode,
     this.supplierId,
+    this.supplierEmail,
+    this.supplierPhone,
   });
 
   factory OrderDetailModel.fromMap(Map<String, dynamic> map) {
@@ -50,6 +54,8 @@ class OrderDetailModel {
       supplierName: supplier?['name'],
       supplierCode: supplier?['supplier_code'],
       supplierId: supplier?['id'],
+      supplierEmail: supplier?['email'],
+      supplierPhone: supplier?['phone'],
     );
   }
 }

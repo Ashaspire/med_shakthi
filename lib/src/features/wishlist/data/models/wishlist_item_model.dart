@@ -25,11 +25,15 @@ class WishlistItem {
     final supplier = product?['suppliers'] as Map<String, dynamic>?;
 
     return WishlistItem(
-      id: map['product_id'] ?? '',
-      name: map['name'] ?? '',
-      price: (map['price'] as num?)?.toDouble() ?? 0.0,
+      id: map['product_id'] ?? map['id'] ?? '',
+      // Prioritize product join, fallback to wishlist snapshot
+      name: product?['name'] ?? map['name'] ?? 'Unknown Product',
+      price:
+          (product?['price'] as num?)?.toDouble() ??
+          (map['price'] as num?)?.toDouble() ??
+          0.0,
       image: product?['image_url'] ?? map['image'] ?? '',
-      // Try to get from join, or directly if flattened (unlikely)
+      // Supplier info comes only from join
       supplierName: supplier?['name'],
       supplierCode: supplier?['supplier_code'],
       supplierId: supplier?['id'],
