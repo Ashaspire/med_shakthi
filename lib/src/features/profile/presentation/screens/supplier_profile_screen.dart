@@ -622,11 +622,5 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
 
   Future<void> _handleLogout() async {
     await supabase.auth.signOut();
-    if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginPage()),
-        (route) => false,
-      );
-    }
   }
 }

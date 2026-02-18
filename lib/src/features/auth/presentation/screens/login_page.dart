@@ -52,28 +52,14 @@ class _LoginPageState extends State<LoginPage> {
 
         if (!mounted) return;
 
+        if (!mounted) return;
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Login successful'),
             backgroundColor: Colors.green,
           ),
         );
-
-        if (supplierData != null) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (_) => const SupplierDashboard(),
-            ),
-            (route) => false,
-          );
-        } else {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (_) => const PharmacyHomeScreen(),
-            ),
-            (route) => false,
-          );
-        }
       }
     } on AuthException catch (e) {
       if (!mounted) return;
