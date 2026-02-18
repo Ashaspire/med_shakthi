@@ -515,21 +515,26 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     style: TextStyle(fontSize: 13, color: Colors.grey),
                   ),
                   const SizedBox(height: 12),
-                  ...reasons.map(
-                    (reason) => RadioListTile<String>(
-                      title: Text(reason, style: const TextStyle(fontSize: 14)),
-                      value: reason,
-                      groupValue: selectedReason,
+                  ...reasons.map((reason) {
+                    final isSelected = selectedReason == reason;
+                    return ListTile(
                       contentPadding: EdgeInsets.zero,
                       dense: true,
-                      activeColor: Colors.red,
-                      onChanged: (value) {
+                      leading: Icon(
+                        isSelected
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        color: isSelected ? Colors.red : null,
+                        size: 20,
+                      ),
+                      title: Text(reason, style: const TextStyle(fontSize: 14)),
+                      onTap: () {
                         setDialogState(() {
-                          selectedReason = value;
+                          selectedReason = reason;
                         });
                       },
-                    ),
-                  ),
+                    );
+                  }),
                   if (selectedReason == "Other")
                     TextField(
                       controller: otherReasonController,
