@@ -92,12 +92,6 @@ class _AccountPageState extends State<AccountPage> {
       context.read<WishlistService>().clearWishlist();
 
       await supabase.auth.signOut();
-      if (!mounted) return;
-
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginPage()),
-        (route) => false,
-      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -306,10 +300,6 @@ class _AccountPageState extends State<AccountPage> {
           await supabase.auth.signOut();
 
           if (!mounted) return;
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const LoginPage()),
-            (route) => false,
-          );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Account deleted successfully")),
           );

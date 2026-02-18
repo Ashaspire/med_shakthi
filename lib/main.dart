@@ -138,6 +138,7 @@ class _AuthGateState extends State<AuthGate> {
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Providers
@@ -161,11 +162,25 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: ".env");
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL'] ?? '',
-    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
-  );
+  try {
+    await dotenv.load(fileName: ".env");
+    
+    final supabaseUrl = dotenv.env['SUPABASE_URL'];
+    final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+
+    if (supabaseUrl == null || supabaseUrl.isEmpty || 
+        supabaseAnonKey == null || supabaseAnonKey.isEmpty) {
+      throw Exception('Supabase URL or Anon Key is missing in .env');
+    }
+
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    );
+  } catch (e) {
+    debugPrint('Initialization error: $e');
+    // We run the app regardless to show an error UI instead of hanging
+  }
 
   runApp(
     MultiProvider(
@@ -219,46 +234,183 @@ class _RootRouterState extends State<RootRouter> {
   void initState() {
     super.initState();
 
-    _session = Supabase.instance.client.auth.currentSession;
+    try {
+      _session = Supabase.instance.client.auth.currentSession;
 
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      final event = data.event;
-      final session = data.session;
+      Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+        final event = data.event;
+        final session = data.session;
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      if (event == AuthChangeEvent.passwordRecovery) {
+        if (event == AuthChangeEvent.passwordRecovery) {
+          setState(() {
+            _isRecoveringPassword = true;
+          });
+
+          navigatorKey.currentState?.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const ResetPasswordPage()),
+            (_) => false,
+          );
+          return;
+        }
+
         setState(() {
-          _isRecoveringPassword = true;
+          _session = session;
+          _isRecoveringPassword = false;
         });
 
-        navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const ResetPasswordPage()),
-          (_) => false,
-        );
-        return;
-      }
-
-      setState(() {
-        _session = session;
-        _isRecoveringPassword = false;
+        // 🧹 Clear navigation stack whenever auth state changes
+        // This ensures any pushed routes (like Signup/Forgot Pwd) are cleared
+        // and we are back at the RootRouter which has the PopScope.
+        if (event == AuthChangeEvent.signedIn ||
+            event == AuthChangeEvent.signedOut) {
+          navigatorKey.currentState?.popUntil((route) => route.isFirst);
+        }
       });
-    });
+    } catch (e) {
+      debugPrint('RootRouter initState error: $e');
+    }
+  }
+
+  Future<bool> _showExitDialog(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            surfaceTintColor: Colors.transparent,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6AA39B).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.logout_rounded,
+                    color: Color(0xFF6AA39B),
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Confirm Exit',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'Are you sure you want to leave?\nWe\'ll be waiting for your return.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white70
+                    : Colors.black54,
+              ),
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: const BorderSide(color: Color(0xFF6AA39B)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Stay',
+                          style: TextStyle(color: Color(0xFF6AA39B))),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: const Color(0xFF6AA39B),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Exit'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          ),
+        ) ??
+        false;
   }
 
   @override
   Widget build(BuildContext context) {
-    // 🔐 PASSWORD RESET FLOW (HIGHEST PRIORITY)
-    if (_isRecoveringPassword) {
-      return const ResetPasswordPage();
+    Widget child;
+
+    // 🛑 CHECK IF SUPABASE IS INITIALIZED
+    try {
+      Supabase.instance.client;
+      // 🔐 PASSWORD RESET FLOW (HIGHEST PRIORITY)
+      if (_isRecoveringPassword) {
+        child = const ResetPasswordPage();
+      }
+      // 🔐 NORMAL AUTH FLOW
+      else if (_session == null) {
+        child = const LoginPage();
+      } else {
+        child = const AuthGate();
+      }
+    } catch (_) {
+      child = const Scaffold(
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: Colors.red),
+                SizedBox(height: 16),
+                Text(
+                  'Configuration Error',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Please check if your .env file contains valid SUPABASE_URL and SUPABASE_ANON_KEY.',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
-    // 🔐 NORMAL AUTH FLOW
-    if (_session == null) {
-      return const LoginPage();
-    }
-
-    return const AuthGate();
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldExit = await _showExitDialog(context);
+        if (shouldExit && mounted) {
+          SystemNavigator.pop();
+        }
+      },
+      child: child,
+    );
   }
 }
 
@@ -281,14 +433,14 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   Future<void> _checkUserRole() async {
-    final user = Supabase.instance.client.auth.currentUser;
-
-    if (user == null) {
-      if (mounted) setState(() => _isLoading = false);
-      return;
-    }
-
     try {
+      final user = Supabase.instance.client.auth.currentUser;
+
+      if (user == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
       final data = await Supabase.instance.client
           .from('suppliers')
           .select()
@@ -301,7 +453,8 @@ class _AuthGateState extends State<AuthGate> {
           _isLoading = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('AuthGate error: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
