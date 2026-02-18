@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
@@ -21,8 +20,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
   bool isScanned = false;
   bool isLoading = false;
 
-  final MobileScannerController cameraController =
-  MobileScannerController();
+  final MobileScannerController cameraController = MobileScannerController();
 
   final ImagePicker picker = ImagePicker();
 
@@ -33,7 +31,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
     });
 
     try {
-      print("Scanned Product ID: $productId");
+      if (kDebugMode) debugPrint("Scanned Product ID: $productId");
 
       final res = await supabase
           .from('products')
@@ -53,13 +51,11 @@ class _QRScannerPageState extends State<QRScannerPage> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => ProductPage(product: product),
-          ),
+          MaterialPageRoute(builder: (_) => ProductPage(product: product)),
         );
       }
     } catch (e) {
-      print("ERROR: $e");
+      if (kDebugMode) debugPrint("ERROR: $e");
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -79,8 +75,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
 
   ///  Pick QR from gallery
   Future<void> _pickFromGallery() async {
-    final XFile? image =
-    await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image == null) return;
 
@@ -97,11 +92,10 @@ class _QRScannerPageState extends State<QRScannerPage> {
         _openProduct(code);
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("No QR found in image"),
-        ),
-      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("No QR found in image")));
 
       setState(() {
         isLoading = false;
@@ -120,7 +114,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
     if (code != null) {
       isScanned = true;
 
-      print("QR RESULT: $code");
+      if (kDebugMode) debugPrint("QR RESULT: $code");
 
       _openProduct(code);
     }
@@ -136,27 +130,21 @@ class _QRScannerPageState extends State<QRScannerPage> {
           IconButton(
             icon: const Icon(Icons.photo),
             onPressed: _pickFromGallery,
-          )
+          ),
         ],
       ),
 
       body: Stack(
         children: [
-
           /// Camera Scanner
-          MobileScanner(
-            controller: cameraController,
-            onDetect: _onDetect,
-          ),
+          MobileScanner(controller: cameraController, onDetect: _onDetect),
 
           /// Loader
           if (isLoading)
             Container(
               color: Colors.black54,
               child: const Center(
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                ),
+                child: CircularProgressIndicator(color: Colors.white),
               ),
             ),
 
@@ -166,15 +154,11 @@ class _QRScannerPageState extends State<QRScannerPage> {
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.green,
-                  width: 3,
-                ),
+                border: Border.all(color: Colors.green, width: 3),
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
           ),
-
         ],
       ),
 

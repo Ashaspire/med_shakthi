@@ -4,7 +4,7 @@ import 'sales_stats_service.dart';
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
+// permission_handler removed (unused)
 import 'package:open_filex/open_filex.dart';
 
 class SalesAnalyticsPage extends StatefulWidget {
@@ -1063,7 +1063,6 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
                     ),
                   ),
                 ),
-
               ],
             ),
           ),
@@ -1362,18 +1361,10 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
 
   Future<void> _exportCSV(List<Map<String, dynamic>> transactions) async {
     try {
-
       // CSV rows
       List<List<dynamic>> rows = [];
 
-      rows.add([
-        "Order ID",
-        "Medicine",
-        "Qty",
-        "Amount",
-        "Status",
-        "Date"
-      ]);
+      rows.add(["Order ID", "Medicine", "Qty", "Amount", "Status", "Date"]);
 
       for (var t in transactions) {
         rows.add([
@@ -1382,7 +1373,7 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
           t['qty'],
           t['amount'],
           t['status'],
-          t['date']
+          t['date'],
         ]);
       }
 
@@ -1402,17 +1393,15 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage>
       // Open file
       await OpenFilex.open(path);
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("CSV Exported Successfully")),
       );
-
     } catch (e) {
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Export failed: $e")),
-      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Export failed: $e")));
     }
   }
-
-
 }

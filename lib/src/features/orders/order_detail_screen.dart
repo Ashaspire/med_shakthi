@@ -2,9 +2,10 @@ import 'package:med_shakthi/src/features/products/presentation/screens/product_p
 import 'package:med_shakthi/src/features/products/data/models/product_model.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'models/order_detail_model.dart';
+import 'package:med_shakthi/src/features/orders/models/order_detail_model.dart';
 import 'package:med_shakthi/src/core/utils/smart_product_image.dart';
-import 'package:med_shakthi/src/features/orders/chat_screen.dart';
+import 'package:med_shakthi/src/features/chat/services/chat_service.dart';
+import 'package:med_shakthi/src/features/chat/presentation/screens/unified_chat_screen.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final Map<String, dynamic> orderData;
@@ -402,23 +403,39 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {
+                onPressed: () async {
                   if (firstItem != null && firstItem.supplierId != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatScreen(
-                          supplier: SupplierProfile(
-                            id: firstItem.supplierId!,
-                            name: firstItem.supplierName ?? 'Supplier',
-                            profileImage: '', // Placeholder as DB has no image
-                            phone: firstItem.supplierPhone ?? '',
-                            email: firstItem.supplierEmail ?? '',
-                            isOnline: false, // Default
+                    try {
+                      final currentUserId =
+                          Supabase.instance.client.auth.currentUser!.id;
+                      final chatId = await ChatService().getOrCreateChat(
+                        orderId: orderId,
+                        supplierId: firstItem.supplierId!,
+                        userId: currentUserId,
+                      );
+
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UnifiedChatScreen(
+                              chatId: chatId,
+                              otherUserName:
+                                  firstItem.supplierName ?? 'Supplier',
+                              otherUserId: firstItem.supplierId!,
+                              otherUserImage:
+                                  null, // Add supplier image if available in model
+                            ),
                           ),
-                        ),
-                      ),
-                    );
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error starting chat: $e')),
+                        );
+                      }
+                    }
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -428,7 +445,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   }
                 },
                 icon: const Icon(Icons.support_agent),
-                label: const Text('Support'),
+                label: const Text('Contact Supplier'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: themeColor,
                   side: BorderSide(color: themeColor),
@@ -515,21 +532,26 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     style: TextStyle(fontSize: 13, color: Colors.grey),
                   ),
                   const SizedBox(height: 12),
-                  ...reasons.map(
-                    (reason) => RadioListTile<String>(
-                      title: Text(reason, style: const TextStyle(fontSize: 14)),
-                      value: reason,
-                      groupValue: selectedReason,
+                  ...reasons.map((reason) {
+                    final isSelected = selectedReason == reason;
+                    return ListTile(
                       contentPadding: EdgeInsets.zero,
                       dense: true,
-                      activeColor: Colors.red,
-                      onChanged: (value) {
+                      leading: Icon(
+                        isSelected
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        color: isSelected ? Colors.red : null,
+                        size: 20,
+                      ),
+                      title: Text(reason, style: const TextStyle(fontSize: 14)),
+                      onTap: () {
                         setDialogState(() {
-                          selectedReason = value;
+                          selectedReason = reason;
                         });
                       },
-                    ),
-                  ),
+                    );
+                  }),
                   if (selectedReason == "Other")
                     TextField(
                       controller: otherReasonController,
