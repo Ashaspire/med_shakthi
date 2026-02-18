@@ -161,11 +161,25 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: ".env");
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL'] ?? '',
-    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
-  );
+  try {
+    await dotenv.load(fileName: ".env");
+    
+    final supabaseUrl = dotenv.env['SUPABASE_URL'];
+    final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+
+    if (supabaseUrl == null || supabaseUrl.isEmpty || 
+        supabaseAnonKey == null || supabaseAnonKey.isEmpty) {
+      throw Exception('Supabase URL or Anon Key is missing in .env');
+    }
+
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    );
+  } catch (e) {
+    debugPrint('Initialization error: $e');
+    // We run the app regardless to show an error UI instead of hanging
+  }
 
   runApp(
     MultiProvider(
@@ -219,35 +233,68 @@ class _RootRouterState extends State<RootRouter> {
   void initState() {
     super.initState();
 
-    _session = Supabase.instance.client.auth.currentSession;
+    try {
+      _session = Supabase.instance.client.auth.currentSession;
 
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      final event = data.event;
-      final session = data.session;
+      Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+        final event = data.event;
+        final session = data.session;
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      if (event == AuthChangeEvent.passwordRecovery) {
+        if (event == AuthChangeEvent.passwordRecovery) {
+          setState(() {
+            _isRecoveringPassword = true;
+          });
+
+          navigatorKey.currentState?.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const ResetPasswordPage()),
+            (_) => false,
+          );
+          return;
+        }
+
         setState(() {
-          _isRecoveringPassword = true;
+          _session = session;
+          _isRecoveringPassword = false;
         });
-
-        navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const ResetPasswordPage()),
-          (_) => false,
-        );
-        return;
-      }
-
-      setState(() {
-        _session = session;
-        _isRecoveringPassword = false;
       });
-    });
+    } catch (e) {
+      debugPrint('RootRouter initState error: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // 🛑 CHECK IF SUPABASE IS INITIALIZED
+    try {
+      Supabase.instance.client;
+    } catch (_) {
+      return const Scaffold(
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: Colors.red),
+                SizedBox(height: 16),
+                Text(
+                  'Configuration Error',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Please check if your .env file contains valid SUPABASE_URL and SUPABASE_ANON_KEY.',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     // 🔐 PASSWORD RESET FLOW (HIGHEST PRIORITY)
     if (_isRecoveringPassword) {
       return const ResetPasswordPage();
@@ -281,14 +328,14 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   Future<void> _checkUserRole() async {
-    final user = Supabase.instance.client.auth.currentUser;
-
-    if (user == null) {
-      if (mounted) setState(() => _isLoading = false);
-      return;
-    }
-
     try {
+      final user = Supabase.instance.client.auth.currentUser;
+
+      if (user == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
       final data = await Supabase.instance.client
           .from('suppliers')
           .select()
@@ -301,7 +348,8 @@ class _AuthGateState extends State<AuthGate> {
           _isLoading = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('AuthGate error: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }

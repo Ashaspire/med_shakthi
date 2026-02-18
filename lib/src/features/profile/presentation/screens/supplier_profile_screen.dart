@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:med_shakthi/src/features/auth/presentation/screens/login_page.dart';
 import '../../../../features/profile/presentation/screens/privacy_policy_screen.dart';
+import 'supplier_faq_screen.dart';
 
 class SupplierProfileScreen extends StatefulWidget {
   const SupplierProfileScreen({super.key});
@@ -306,7 +307,14 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                     );
                   }),
                   _buildMenuOption(Icons.notifications, "Notifications", () {}),
-                  _buildMenuOption(Icons.help, "Help & Support", () {}),
+                  _buildMenuOption(Icons.help, "Help & Support", () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SupplierFaqScreen(),
+                      ),
+                    );
+                  }),
 
                   const SizedBox(height: 40),
                   SizedBox(
