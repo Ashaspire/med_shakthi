@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// Removed unused import: supabase_flutter.dart
 import '../../data/wishlist_service.dart';
 import '../../data/models/wishlist_item_model.dart';
 import '../../../cart/data/cart_data.dart';
