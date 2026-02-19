@@ -17,7 +17,7 @@ class CartPage extends StatelessWidget {
     final cart = Provider.of<CartData>(context);
     final themeColor = Theme.of(context).primaryColor;
     final int shipping = cart.items.isNotEmpty ? 10 : 0;
-    final double total = cart.subTotal + shipping;
+    final double total = cart.selectedSubTotal + shipping;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: cart.items.isEmpty
@@ -185,7 +185,7 @@ class CartPage extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildSummaryRow(context, "Sub Total", cart.subTotal),
+          _buildSummaryRow(context, "Sub Total", cart.selectedSubTotal),
           const SizedBox(height: 12),
           _buildSummaryRow(context, "Shipping & Tax", shipping),
           const Divider(height: 32),
@@ -286,11 +286,21 @@ class CartPage extends StatelessWidget {
     int shipping,
   ) {
     final themeColor = Theme.of(context).primaryColor;
-    final int totalItems = cart.items.fold(
-      0,
-      (sum, item) => sum + item.quantity,
-    );
-    final double total = cart.subTotal + shipping;
+    final selectedItems =
+        cart.items.where((item) => item.isSelected).toList();
+
+    if (selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select at least one item.")),
+      );
+      return;
+    }
+
+    final int totalItems =
+        selectedItems.fold(0, (sum, item) => sum + item.quantity);
+
+    final double total = cart.selectedSubTotal + shipping;
+
 
     showDialog(
       context: context,
@@ -381,7 +391,15 @@ class _CartItemCard extends StatelessWidget {
           ],
         ),
         child: Row(
-          children: [
+          children: [             
+          
+            Checkbox(
+              value: item.isSelected,
+              onChanged: (value) {
+                cart.toggleSelection(index, value ?? true);
+              },
+            ),
+
             // Image with gray background
             Hero(
               tag: item.id,

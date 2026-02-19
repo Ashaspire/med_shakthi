@@ -1,36 +1,34 @@
 class CartItem {
   final String id;
-  final String name; // Keeping 'name' for backward compatibility
-  final String? title; // Made nullable
-  final String? brand; // Made nullable
-  final String? size; // Made nullable
+  final String name;
+  final String? title;
+  final String? brand;
+  final String? size;
   final double price;
-  final String? imagePath; // Made nullable
+  final String? imagePath;
   int quantity;
-  String? imageUrl; // Kept for backward compatibility
+  String? imageUrl;
+
+  // ✅ NEW: Selection state
+  bool isSelected;
 
   CartItem({
     required this.id,
     required this.name,
-    this.title, // Optional
-    this.brand, // Optional
-    this.size, // Optional
+    this.title,
+    this.brand,
+    this.size,
     required this.price,
-    this.imagePath, // Optional
+    this.imagePath,
     this.quantity = 1,
     this.imageUrl,
+    this.isSelected = true, // default selected
   });
 
-  // Helper to get a display title (prefers title, falls back to name)
   String get displayTitle => title ?? name;
-
-  // Helper to get a display image (prefers imagePath, falls back to imageUrl)
   String get displayImage => imagePath ?? imageUrl ?? '';
-
-  // Get total price for this item
   double get totalPrice => price * quantity;
 
-  // Convert CartItem to Map for local/remote storage
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -42,11 +40,10 @@ class CartItem {
       'quantity': quantity,
       'imagePath': imagePath,
       'imageUrl': imageUrl,
-      // Removed serverTimestamp for JSON compatibility
+      'isSelected': isSelected, // ✅ save selection locally
     };
   }
 
-  // Create CartItem from Map data
   factory CartItem.fromMap(Map<String, dynamic> map) {
     return CartItem(
       id: map['id'] ?? '',
@@ -58,11 +55,14 @@ class CartItem {
       quantity: map['quantity'] ?? 1,
       imagePath: map['imagePath'],
       imageUrl: map['imageUrl'],
+      isSelected: map['isSelected'] ?? true,
     );
   }
 
-  // Copy method for updating quantity
-  CartItem copyWith({int? quantity}) {
+  CartItem copyWith({
+    int? quantity,
+    bool? isSelected,
+  }) {
     return CartItem(
       id: id,
       name: name,
@@ -73,6 +73,7 @@ class CartItem {
       imagePath: imagePath,
       quantity: quantity ?? this.quantity,
       imageUrl: imageUrl,
+      isSelected: isSelected ?? this.isSelected,
     );
   }
 }
