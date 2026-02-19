@@ -14,6 +14,11 @@ class CartData extends ChangeNotifier {
 
   double get subTotal => _items.fold(0, (t, i) => t + i.price * i.quantity);
 
+  double get selectedSubTotal =>
+    _items
+        .where((item) => item.isSelected)
+        .fold(0, (sum, item) => sum + item.price * item.quantity);
+
   StreamSubscription<AuthState>? _authSubscription;
   StreamSubscription<List<Map<String, dynamic>>>? _cartStreamSubscription;
 
@@ -118,6 +123,7 @@ class CartData extends ChangeNotifier {
                 price: (e['price'] as num).toDouble(),
                 imagePath: e['image'],
                 quantity: e['quantity'] ?? 1,
+                isSelected: true,
               );
             }).toList();
             _saveLocalCart();
@@ -216,6 +222,13 @@ class CartData extends ChangeNotifier {
           .eq('user_id', user.id);
     }
   }
+
+  void toggleSelection(int index, bool value) {
+  _items[index].isSelected = value;
+  notifyListeners();
+  _saveLocalCart();
+}
+
 
   // New method for logout
   Future<void> clearLocalStateOnly() async {
