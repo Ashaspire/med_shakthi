@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../features/profile/presentation/screens/privacy_policy_screen.dart';
 import 'supplier_faq_screen.dart';
+import 'supplier_notifications_page.dart';
 
 class SupplierProfileScreen extends StatefulWidget {
   const SupplierProfileScreen({super.key});
@@ -375,7 +376,14 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                       ),
                     );
                   }),
-                  _buildMenuOption(Icons.notifications, "Notifications", () {}),
+                  _buildMenuOption(Icons.notifications, "Notifications", () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SupplierNotificationsPage(),
+                      ),
+                    );
+                  }),
                   _buildMenuOption(Icons.help, "Help & Support", () {
                     Navigator.push(
                       context,
